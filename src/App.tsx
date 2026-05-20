@@ -15,7 +15,13 @@ import Image_Creatives from "./components/creatives_team_dashboard/Image_Creativ
 import Video_Creatives from "./components/creatives_team_dashboard/Video_Creatives";
 import View_Creative from "./components/creatives_team_dashboard/View_Creative";
 import Third_Party_Creative from "./components/creatives_team_dashboard/Third_Party_Creative";
-
+import SuperAdminLayout from "./components/super_admin/SuperAdminLayout";
+import SuperAdminOverview from "./components/super_admin/SuperAdminOverview";
+import { AllClientsPage, ApprovedPage, PendingPage, RejectedPage } from "./components/super_admin/ClientListPages";
+import { AdminUsersPage, AuditLogsPage, SystemSettingsPage } from "./components/super_admin/SettingsPages";
+import { Navigate } from "react-router-dom";
+import TeamAccess from "./components/super_admin/TeamAccess";
+import All_Campaigns from "./components/super_admin/All_Campaigns";
 function App() {
 
   return (
@@ -37,6 +43,21 @@ function App() {
         <Route path="/video_creatives" element={<Video_Creatives />} />
         <Route path="/creative/:campaign_id" element={<View_Creative />} />
         <Route path="/third_party_creatives" element={<Third_Party_Creative />} />
+
+
+        <Route path="/superadmin" element={<SuperAdminLayout />}>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<SuperAdminOverview />} />
+          <Route path="clients" element={<AllClientsPage />} />
+          <Route path="pending" element={<PendingPage />} />
+          <Route path="approved" element={<ApprovedPage />} />
+          <Route path="rejected" element={<RejectedPage />} />
+          <Route path="system-settings" element={<SystemSettingsPage />} />
+          <Route path="admin-users" element={<AdminUsersPage />} />
+          <Route path="audit-logs" element={<AuditLogsPage />} />
+          <Route path="team" element={<TeamAccess />} />
+          <Route path="campaigns" element={<All_Campaigns />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

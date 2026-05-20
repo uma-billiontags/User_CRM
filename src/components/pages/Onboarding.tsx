@@ -1124,8 +1124,7 @@ export default function Onboarding() {
                         <Input disabled value="Auto-generated" />
                       </Form.Item>
 
-                      <Form.Item label="Reporting ID (Internal)" name="reporting_id"
-                        rules={[{ required: true, message: "Reporting ID is required" }]}>
+                      <Form.Item label="Reporting ID (Internal)" name="reporting_id">
                         <Input placeholder="Enter Reporting ID" value={company.reporting_id}
                           onChange={(e) => sf("reporting_id", e.target.value)} />
                       </Form.Item>
