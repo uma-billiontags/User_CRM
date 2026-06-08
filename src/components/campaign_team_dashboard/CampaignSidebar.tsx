@@ -1,19 +1,17 @@
 import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard, Settings, LogOut,
-} from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, LogOut } from 'lucide-react';
 
-const BLUE = '#2563EB';
-const WHITE  = '#FFFFFF';
+const BLUE  = '#2563EB';
+const WHITE = '#FFFFFF';
 
 const CAMPAIGN_NAV = [
   {
     g: 'WORKSPACE',
     items: [
-      { label: 'Dashboard',              icon: LayoutDashboard, to: '/campaign_dashboard'      },
+      { label: 'Dashboard', icon: LayoutDashboard, to: '/campaign_dashboard' },
+      { label: 'Reports',   icon: FileText,        to: '/reports'            },
     ],
   },
-  
 ];
 
 interface CampaignSidebarProps {
@@ -22,7 +20,7 @@ interface CampaignSidebarProps {
 }
 
 export default function CampaignSidebar({ collapsed, onToggle }: CampaignSidebarProps) {
-  const location  = useLocation();
+  const location   = useLocation();
   const clientName = localStorage.getItem('client_name') ?? '';
 
   const avatarInitials = clientName ? clientName.charAt(0).toUpperCase() : 'C';
@@ -39,7 +37,7 @@ export default function CampaignSidebar({ collapsed, onToggle }: CampaignSidebar
       overflow: 'hidden',
     }}>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div style={{
         height: 64, display: 'flex', alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'space-between',
@@ -48,14 +46,14 @@ export default function CampaignSidebar({ collapsed, onToggle }: CampaignSidebar
       }}>
         {!collapsed && (
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-           <div style={{
+            <div style={{
               width: 32, height: 32, borderRadius: '50%', background: BLUE,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: WHITE, fontSize: 12, fontWeight: 800, flexShrink: 0,
             }}>{avatarInitials}</div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: WHITE, letterSpacing: '-0.3px' }}>
-                {displayName} 
+                {displayName}
               </div>
               <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.1em' }}>
                 CAMPAIGN PLATFORM
@@ -88,7 +86,7 @@ export default function CampaignSidebar({ collapsed, onToggle }: CampaignSidebar
         </button>
       </div>
 
-      {/* ── Nav ── */}
+      {/* Nav */}
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 8px' }}>
         {CAMPAIGN_NAV.map(({ g, items }) => (
           <div key={g} style={{ marginBottom: 2 }}>
@@ -114,7 +112,7 @@ export default function CampaignSidebar({ collapsed, onToggle }: CampaignSidebar
                     fontSize: 13, fontWeight: active ? 600 : 400,
                     marginBottom: 1,
                     color: active ? WHITE : 'rgba(255,255,255,0.45)',
-                    background: active ? BLUE  : 'transparent',
+                    background: active ? BLUE : 'transparent',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s',
                   }}>
@@ -128,7 +126,7 @@ export default function CampaignSidebar({ collapsed, onToggle }: CampaignSidebar
         ))}
       </nav>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <div style={{
         borderTop: '1px solid rgba(255,255,255,0.07)',
         padding: collapsed ? '10px 8px' : '10px',

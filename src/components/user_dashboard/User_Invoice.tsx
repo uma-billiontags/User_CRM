@@ -178,9 +178,9 @@ function generateInvoiceHtml(campaign: Campaign, client: ClientDetail | null): s
     // ←←← IMPROVED CURRENCY HANDLING
     const currencyCode = client?.billing?.billing_currency || "USD";
     const currencySymbol = currencyCode === "INR" ? "₹"
-                        : currencyCode === "NZD" ? "$"
-                        : currencyCode === "AED" ? "د.إ"
-                        : "$";   // default fallback    
+        : currencyCode === "NZD" ? "$"
+            : currencyCode === "AED" ? "د.إ"
+                : "$";   // default fallback    
     const paymentTerms = client?.billing?.payment_terms || "NET 0 Days";
 
     const { subtotal, discount, total } = calculateTotal(lineItems);
@@ -675,10 +675,54 @@ export default function User_Invoice() {
     const [loadingClient, setLoadingClient] = useState(false);
     const [downloading, setDownloading] = useState(false);
 
+    const [invoiceMap, setInvoiceMap] = useState<Record<string, string>>({});
+
     const clientId = localStorage.getItem("client_id");
     const clientName = localStorage.getItem("client_name") ?? "";
 
-    // ── Fetch approved campaigns ──────────────────────────────────────────────
+    // Fetch invoices from backend (only campaigns whose end date has passed)
+    const fetchInvoices = () => {
+        fetch(`${BASE_URL}/get_invoices_by_client/${clientId}/`, {
+            headers: { "ngrok-skip-browser-warning": "1" },
+        })
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data: Array<{ campaign_id: string; invoice_id: string }>) => {
+                const map: Record<string, string> = {};
+                data.forEach((inv) => {
+                    map[inv.campaign_id] = inv.invoice_id;
+                });
+                setInvoiceMap(map);
+            })
+            .catch(() => { });
+    };
+
+    // Auto-generate invoices for eligible campaigns (end date passed + approved)
+    const autoGenerateInvoices = async (campaignList: Campaign[]) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const eligible = campaignList.filter((c) => {
+            if (!c.end_date) return false;
+            const endDate = new Date(c.end_date);
+            endDate.setHours(23, 59, 59, 999);
+            return endDate < today; // end date has fully passed
+        });
+
+        await Promise.all(
+            eligible.map(async (campaign) => {
+                const formData = new FormData();
+                formData.append("campaign_id", campaign.campaign_id);
+                try {
+                    await fetch(`${BASE_URL}/generate_invoice/`, {
+                        method: "POST",
+                        headers: { "ngrok-skip-browser-warning": "1" },
+                        body: formData,
+                    });
+                } catch { /* ignore */ }
+            })
+        );
+    };
+
     const fetchCampaigns = () => {
         setLoading(true);
         fetch(`${BASE_URL}/get_campaigns_by_client/${clientId}/`, {
@@ -688,10 +732,29 @@ export default function User_Invoice() {
                 if (!r.ok) throw new Error();
                 return r.json();
             })
-            .then((data) => {
+            .then(async (data) => {
                 const list: Campaign[] = Array.isArray(data) ? data : [];
-                // Only approved campaigns have invoices
-                setCampaigns(list.filter((c) => c.approval_status === "approved" && c.campaign_id));
+                const approved = list.filter(
+                    (c) => c.approval_status === "approved" && c.campaign_id
+                );
+
+                // ── Only show campaigns whose end date has passed ──
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const invoiceable = approved.filter((c) => {
+                    if (!c.end_date) return false;
+                    const endDate = new Date(c.end_date);
+                    endDate.setHours(23, 59, 59, 999);
+                    return endDate < today;
+                });
+
+                setCampaigns(invoiceable);
+
+                // Auto-generate invoice records in backend
+                await autoGenerateInvoices(invoiceable);
+
+                // Fetch invoice map to show invoice IDs
+                fetchInvoices();
             })
             .catch(() => setCampaigns([]))
             .finally(() => setLoading(false));
@@ -1159,7 +1222,8 @@ export default function User_Invoice() {
                                                     border: `1px solid #DDD6FE`,
                                                 }}
                                             >
-                                                {invoiceNumber}
+                                                {invoiceMap[campaign.campaign_id] ?? generateInvoiceNumber(campaign)}
+
                                             </span>
                                         </div>
 

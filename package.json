@@ -15,6 +15,7 @@
     "antd": "^6.3.7",
     "dayjs": "^1.11.20",
     "firebase": "^12.13.0",
+    "html2pdf.js": "^0.14.0",
     "libphonenumber-js": "^1.12.42",
     "lucide-react": "^1.11.0",
     "react": "^19.2.5",

@@ -29,6 +29,7 @@ import Campaign_Dashboard from "./components/campaign_team_dashboard/Campaign_Da
 import View_Campaign_Team from "./components/campaign_team_dashboard/View_Campaign_Team";
 import User_IO from "./components/user_dashboard/User_IO";
 import User_Invoice from "./components/user_dashboard/User_Invoice";
+import Reports from "./components/campaign_team_dashboard/Reports";
 function App() {
 
   return (
@@ -57,6 +58,7 @@ function App() {
 
         <Route path="/campaign_dashboard" element={<Campaign_Dashboard />} />
         <Route path="/campaign_view_team/:campaign_id" element={<View_Campaign_Team />} />
+        <Route path="/reports" element={<Reports />} />
 
         <Route path="/superadmin" element={<SuperAdminLayout />}>
           <Route index element={<Navigate to="overview" replace />} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Modal, Spin, Tag, Input, Empty } from "antd";
 import {
     EyeOutlined,
@@ -163,9 +163,8 @@ function parseGeo(geo: GeoLocation[] | string | undefined): string {
 
 // ── IO HTML Generator ─────────────────────────────────────────────────────────
 
-function generateIOHtml(campaign: Campaign, client: ClientDetail | null): string {
+function generateIOHtml(campaign: Campaign, client: ClientDetail | null, ioId: string = "—"): string {
     const lineItems = campaign.line_items || [];
-    const bookingIOId = `BI${campaign.id.toString().padStart(5, "0")}`;
     const today = new Date().toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "long",
@@ -181,7 +180,7 @@ function generateIOHtml(campaign: Campaign, client: ClientDetail | null): string
             (li, i) => `
     <tr style="${i % 2 === 0 ? "background:#fff;" : "background:#f9fafb;"}">
       <td style="padding:8px 10px;border:1px solid #e5e7eb;font-size:12px;font-family:monospace;color:#4f46e5;white-space:nowrap;">
-        ${bookingIOId}/<br/>${li.line_item_id || "—"}
+        ${ioId}/<br/>${li.line_item_id || "—"}
       </td>
       <td style="padding:8px 10px;border:1px solid #e5e7eb;font-size:12px;">
         <div style="font-weight:600;color:#111827;">${campaign.campaign_name}</div>
@@ -287,7 +286,7 @@ function generateIOHtml(campaign: Campaign, client: ClientDetail | null): string
     <div class="io-ids">
       <div style="margin-bottom:6px;">
         <div class="io-id-label">Booking IO ID</div>
-        <div class="io-id-val">${bookingIOId}</div>
+        <div class="io-id-val">${ioId}</div>
       </div>
       <div>
         <div class="io-id-label">Campaign ID</div>
@@ -483,6 +482,7 @@ function IOPreviewModal({
     onClose,
     onDownload,
     downloading,
+    ioId
 }: {
     open: boolean;
     campaign: Campaign | null;
@@ -490,12 +490,13 @@ function IOPreviewModal({
     onClose: () => void;
     onDownload: () => void;
     downloading: boolean;
+    ioId: string;
 }) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
         if (open && campaign && iframeRef.current) {
-            const html = generateIOHtml(campaign, client);
+            const html = generateIOHtml(campaign, client, ioId);  // ← pass ioId
             const doc = iframeRef.current.contentDocument;
             if (doc) {
                 doc.open();
@@ -621,9 +622,42 @@ export default function User_IO() {
     const [loadingClient, setLoadingClient] = useState(false);
     const [downloading, setDownloading] = useState(false);
 
+    const [ioMap, setIoMap] = useState<Record<string, string>>({});
+
     const clientId = localStorage.getItem("client_id");
     const clientName = localStorage.getItem("client_name") ?? "";
 
+    const fetchIOs = () => {
+        fetch(`${BASE_URL}/get_insertion_orders_by_client/${clientId}/`, {
+            headers: { "ngrok-skip-browser-warning": "1" },
+        })
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data: Array<{ campaign_id: string; io_id: string }>) => {
+                const map: Record<string, string> = {};
+                data.forEach((io) => {
+                    map[io.campaign_id] = io.io_id;
+                });
+                setIoMap(map);
+            })
+            .catch(() => { });
+    };
+
+    // Auto-create IO records for all approved campaigns that don't have one yet
+    const autoCreateIOs = async (campaignList: Campaign[]) => {
+        const createPromises = campaignList.map(async (campaign) => {
+            // Only create if not already in ioMap
+            const formData = new FormData();
+            formData.append("campaign_id", campaign.campaign_id);
+            try {
+                await fetch(`${BASE_URL}/save_insertion_order/`, {
+                    method: "POST",
+                    headers: { "ngrok-skip-browser-warning": "1" },
+                    body: formData,
+                });
+            } catch { /* ignore */ }
+        });
+        await Promise.all(createPromises);
+    };
     // Fetch approved campaigns for this client
     const fetchCampaigns = () => {
         setLoading(true);
@@ -634,15 +668,20 @@ export default function User_IO() {
                 if (!r.ok) throw new Error();
                 return r.json();
             })
-            .then((data) => {
+            .then(async (data) => {
                 const list: Campaign[] = Array.isArray(data) ? data : [];
-                // Only approved campaigns have IOs
-                setCampaigns(list.filter((c) => c.approval_status === "approved" && c.campaign_id));
+                const approved = list.filter((c) => c.approval_status === "approved" && c.campaign_id);
+                setCampaigns(approved);
+
+                // ✅ Auto-create IO for campaigns that don't have one yet
+                await autoCreateIOs(approved);
+
+                // ✅ Then fetch IOs so ioMap is populated
+                fetchIOs();
             })
             .catch(() => setCampaigns([]))
             .finally(() => setLoading(false));
     };
-
     useEffect(() => {
         fetchCampaigns();
     }, [clientId]);
@@ -675,32 +714,38 @@ export default function User_IO() {
         setDownloading(true);
 
         try {
-            const html = generateIOHtml(previewCampaign, previewClient);
+            const html = generateIOHtml(previewCampaign, previewClient, ioMap[previewCampaign.campaign_id] ?? "—");
             const printWindow = window.open("", "_blank", "width=1000,height=800");
             if (!printWindow) {
                 alert("Please allow popups to download the PDF.");
                 setDownloading(false);
                 return;
             }
-
             printWindow.document.write(html);
             printWindow.document.close();
-
-            // Give it time to render then trigger print
             setTimeout(() => {
                 printWindow.focus();
                 printWindow.print();
-                // Close after a delay to allow save dialog
                 setTimeout(() => {
                     printWindow.close();
                     setDownloading(false);
                 }, 2000);
             }, 800);
+
+            // ── Save IO record to backend ──
+            const formData = new FormData();
+            formData.append("campaign_id", previewCampaign.campaign_id);
+            await fetch(`${BASE_URL}/save_insertion_order/`, {
+                method: "POST",
+                headers: { "ngrok-skip-browser-warning": "1" },
+                body: formData,
+            });
+            fetchIOs();
+
         } catch {
             setDownloading(false);
         }
     };
-
     const filtered = campaigns.filter((c) => {
         if (!search.trim()) return true;
         const q = search.toLowerCase();
@@ -968,8 +1013,7 @@ export default function User_IO() {
                         <div
                             style={{
                                 display: "grid",
-                                gridTemplateColumns:
-                                    "160px 80px 1fr 150px 120px 120px 180px",
+                                gridTemplateColumns: "160px 80px 1fr 150px 120px 120px 180px",
                                 padding: "10px 20px",
                                 background: C.slate100,
                                 borderBottom: `1px solid ${C.border}`,
@@ -992,13 +1036,7 @@ export default function User_IO() {
 
                         {/* Rows */}
                         {loading ? (
-                            <div
-                                style={{
-                                    padding: "48px",
-                                    textAlign: "center",
-                                    color: C.slate500,
-                                }}
-                            >
+                            <div style={{ padding: "48px", textAlign: "center", color: C.slate500 }}>
                                 <Spin size="large" />
                                 <div style={{ marginTop: 12, fontSize: 13 }}>
                                     Loading Insertion Orders…
@@ -1010,17 +1048,8 @@ export default function User_IO() {
                                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                                     description={
                                         <div>
-                                            <div
-                                                style={{
-                                                    fontSize: 14,
-                                                    fontWeight: 600,
-                                                    color: C.slate,
-                                                    marginBottom: 4,
-                                                }}
-                                            >
-                                                {campaigns.length === 0
-                                                    ? "No approved campaigns yet"
-                                                    : "No results found"}
+                                            <div style={{ fontSize: 14, fontWeight: 600, color: C.slate, marginBottom: 4 }}>
+                                                {campaigns.length === 0 ? "No approved campaigns yet" : "No results found"}
                                             </div>
                                             <div style={{ fontSize: 12, color: C.slate500 }}>
                                                 {campaigns.length === 0
@@ -1033,9 +1062,7 @@ export default function User_IO() {
                             </div>
                         ) : (
                             filtered.map((campaign, idx) => {
-                                const bookingIOId = `BI${campaign.id
-                                    .toString()
-                                    .padStart(5, "0")}`;
+                                // ✅ bookingIOId REMOVED — now using ioMap from backend
                                 const lineItemCount = campaign.line_items?.length ?? 0;
 
                                 return (
@@ -1043,21 +1070,16 @@ export default function User_IO() {
                                         key={campaign.id}
                                         style={{
                                             display: "grid",
-                                            gridTemplateColumns:
-                                                "160px 80px 1fr 150px 120px 120px 180px",
+                                            gridTemplateColumns: "160px 80px 1fr 150px 120px 120px 180px",
                                             padding: "14px 20px",
-                                            borderBottom:
-                                                idx < filtered.length - 1
-                                                    ? `1px solid ${C.border}`
-                                                    : "none",
+                                            borderBottom: idx < filtered.length - 1 ? `1px solid ${C.border}` : "none",
                                             alignItems: "center",
                                             gap: 12,
                                             background: idx % 2 === 0 ? C.white : "#FAFBFC",
                                             transition: "background 0.12s",
                                         }}
                                         onMouseEnter={(e) =>
-                                        ((e.currentTarget as HTMLDivElement).style.background =
-                                            C.slate100)
+                                            ((e.currentTarget as HTMLDivElement).style.background = C.slate100)
                                         }
                                         onMouseLeave={(e) =>
                                         ((e.currentTarget as HTMLDivElement).style.background =
@@ -1081,7 +1103,7 @@ export default function User_IO() {
                                             </span>
                                         </div>
 
-                                        {/* IO # */}
+                                        {/* IO # — ✅ Now shows real IO ID from backend */}
                                         <div>
                                             <span
                                                 style={{
@@ -1095,42 +1117,22 @@ export default function User_IO() {
                                                     border: `1px solid #FDE68A`,
                                                 }}
                                             >
-                                                {bookingIOId}
+                                                {ioMap[campaign.campaign_id] ?? "—"}
                                             </span>
                                         </div>
 
                                         {/* Campaign Name */}
                                         <div>
-                                            <div
-                                                style={{
-                                                    fontSize: 13,
-                                                    fontWeight: 600,
-                                                    color: C.slate,
-                                                    marginBottom: 3,
-                                                }}
-                                            >
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: C.slate, marginBottom: 3 }}>
                                                 {campaign.campaign_name}
                                             </div>
-                                            <div
-                                                style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: 6,
-                                                    flexWrap: "wrap",
-                                                }}
-                                            >
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                                 {campaign.campaign_type && (
-                                                    <Tag
-                                                        color="blue"
-                                                        style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}
-                                                    >
+                                                    <Tag color="blue" style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}>
                                                         {campaign.campaign_type}
                                                     </Tag>
                                                 )}
-                                                <Tag
-                                                    color="purple"
-                                                    style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}
-                                                >
+                                                <Tag color="purple" style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}>
                                                     {lineItemCount} line item{lineItemCount !== 1 ? "s" : ""}
                                                 </Tag>
                                                 <span
@@ -1202,7 +1204,6 @@ export default function User_IO() {
                                                 icon={<DownloadOutlined />}
                                                 onClick={async () => {
                                                     setPreviewCampaign(campaign);
-                                                    // Fetch client then trigger download
                                                     setDownloading(true);
                                                     let clientData: ClientDetail | null = null;
                                                     try {
@@ -1211,15 +1212,14 @@ export default function User_IO() {
                                                             { headers: { "ngrok-skip-browser-warning": "1" } }
                                                         );
                                                         if (res.ok) clientData = await res.json();
-                                                    } catch {
-                                                        // ignore
-                                                    }
-                                                    const html = generateIOHtml(campaign, clientData);
-                                                    const printWindow = window.open(
-                                                        "",
-                                                        "_blank",
-                                                        "width=1000,height=800"
+                                                    } catch { /* ignore */ }
+
+                                                    const html = generateIOHtml(
+                                                        campaign,
+                                                        clientData,
+                                                        ioMap[campaign.campaign_id] ?? "—"  // ✅ pass real IO ID
                                                     );
+                                                    const printWindow = window.open("", "_blank", "width=1000,height=800");
                                                     if (!printWindow) {
                                                         alert("Please allow popups to download the PDF.");
                                                         setDownloading(false);
@@ -1235,6 +1235,16 @@ export default function User_IO() {
                                                             setDownloading(false);
                                                         }, 2000);
                                                     }, 800);
+
+                                                    // ── Save IO record to backend ──
+                                                    const formData = new FormData();
+                                                    formData.append("campaign_id", campaign.campaign_id);
+                                                    await fetch(`${BASE_URL}/save_insertion_order/`, {
+                                                        method: "POST",
+                                                        headers: { "ngrok-skip-browser-warning": "1" },
+                                                        body: formData,
+                                                    });
+                                                    fetchIOs(); // ✅ refresh IO map after saving
                                                 }}
                                                 style={{
                                                     fontSize: 11,
@@ -1257,7 +1267,6 @@ export default function User_IO() {
                             })
                         )}
                     </div>
-
                     {/* Loading client hint inside preview */}
                     {loadingClient && previewCampaign && (
                         <div
@@ -1291,6 +1300,7 @@ export default function User_IO() {
                 open={!!previewCampaign}
                 campaign={previewCampaign}
                 client={previewClient}
+                ioId={previewCampaign ? (ioMap[previewCampaign.campaign_id] ?? "—") : "—"}  // ← ADD
                 onClose={() => {
                     setPreviewCampaign(null);
                     setPreviewClient(null);
