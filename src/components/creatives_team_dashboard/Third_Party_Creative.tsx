@@ -5,7 +5,6 @@ import {
   DownloadOutlined, CloseOutlined, CodeOutlined, EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import CreativeSidebar from '../creatives_team_dashboard/CreativeSidebar';
 
 const { Text } = Typography;
 
@@ -23,7 +22,6 @@ const SLATE = '#0F172A';
 const SLATE_300 = '#CBD5E1';
 const SLATE_500 = '#64748B';
 const WHITE = '#FFFFFF';
-const BG = '#F8FAFC';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface ThirdPartyRow {
@@ -251,9 +249,6 @@ function PreviewModal({ open, onClose, url, name, ext }: PreviewModalProps) {
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function Third_Party_Creative() {
-  const [collapsed, setCollapsed] = useState(false);
-  const sideWidth = collapsed ? 64 : 240;
-
   const [rows, setRows] = useState<ThirdPartyRow[]>([]);
   const [filtered, setFiltered] = useState<ThirdPartyRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -264,9 +259,6 @@ export default function Third_Party_Creative() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewName, setPreviewName] = useState('');
   const [previewExt, setPreviewExt] = useState('');
-
-  const clientName = localStorage.getItem('client_name') ?? '';
-  const avatarInitials = clientName ? clientName.charAt(0).toUpperCase() : 'U';
 
   const openPreview = (url: string, name: string) => {
     setPreviewUrl(url);
@@ -570,154 +562,122 @@ export default function Third_Party_Creative() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <div style={{
-      display: 'flex', minHeight: '100vh', background: BG,
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
-    }}>
-      <CreativeSidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-
-      <div style={{
-        marginLeft: sideWidth, flex: 1,
-        display: 'flex', flexDirection: 'column',
-        transition: 'margin-left 0.25s', minWidth: 0,
-      }}>
-
-        {/* Header */}
-        <header style={{
-          background: WHITE, borderBottom: `1px solid ${SLATE_300}`,
-          padding: '0 28px', height: 64,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 50,
-        }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: SLATE }}>
-              Third Party Creatives
-            </div>
-            <div style={{ fontSize: 11, color: SLATE_500, letterSpacing: '0.04em' }}>
-              ALL THIRD PARTY FILES &amp; BACKUP IMAGES ACROSS CAMPAIGNS
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%', background: BLUE,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: WHITE, fontSize: 13, fontWeight: 700,
-            }}>{avatarInitials}</div>
-          </div>
-        </header>
-
-        <main style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-
-          {/* Stats */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 16, marginBottom: 20,
-          }}>
-            {[
-              { label: 'Total Third Party Files', value: totalFiles, color: AMBER, bg: AMBER_LIGHT, border: AMBER_BORDER },
-              { label: 'With Input File', value: withInputFile, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
-              { label: 'With Backup Image', value: withBackupImage, color: GREEN, bg: GREEN_LIGHT, border: GREEN_BORDER },
-            ].map(s => (
-              <div key={s.label} style={{
-                background: WHITE, border: `1px solid ${SLATE_300}`,
-                borderRadius: 12, padding: '16px 20px',
-                display: 'flex', alignItems: 'center', gap: 14,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10,
-                  background: s.bg, border: `1px solid ${s.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, fontWeight: 800, color: s.color,
-                }}>{s.value}</div>
-                <div style={{ fontSize: 13, color: SLATE_500, fontWeight: 500 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Legend */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 18,
-            marginBottom: 10, fontSize: 11.5, color: SLATE_500,
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: BLUE, background: BLUE_LIGHT,
-                padding: '1px 5px', borderRadius: 3, border: `1px solid ${BLUE_LIGHT}`,
-              }}><CodeOutlined /></span>
-              Third party input file
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: BLUE, background: BLUE_LIGHT,
-                padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
-              }}>IMG</span>
-              Backup image
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <FileOutlined style={{ fontSize: 12 }} /> Extension badge = file type
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <EyeOutlined style={{ fontSize: 12 }} /> Click name or eye icon to preview
-            </span>
-          </div>
-
-          {/* Filters */}
-          <div style={{
-            background: WHITE, borderRadius: 12, padding: '14px 20px',
-            border: `1px solid ${SLATE_300}`, marginBottom: 16,
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <Input
-              placeholder="Search by campaign, line item, file name…"
-              prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ flex: 1, minWidth: 240, height: 36 }}
-              allowClear
-            />
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchData}
-              style={{ height: 36, color: SLATE_500, border: `1px solid ${SLATE_300}` }}
-            >
-              Refresh
-            </Button>
-            <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
-              {filtered.length} of {totalFiles} files
-            </Text>
-          </div>
-
-          {/* Table */}
-          <div style={{
-            background: WHITE, borderRadius: 12,
-            border: `1px solid ${SLATE_300}`,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden',
-          }}>
-            <Table
-              columns={columns}
-              dataSource={filtered}
-              rowKey="key"
-              loading={loading}
-              scroll={{ x: 1400 }}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showTotal: (t, r) => `${r[0]}–${r[1]} of ${t}`,
-              }}
-              style={{ fontSize: 13 }}
-              locale={{
-                emptyText: (
-                  <div style={{ padding: '40px 0', textAlign: 'center', color: SLATE_500 }}>
-                    <FileImageOutlined style={{ fontSize: 36, color: SLATE_300, display: 'block', marginBottom: 12 }} />
-                    No third party creatives found.
-                  </div>
-                ),
-              }}
-            />
-          </div>
-        </main>
+    <>
+      {/* Header */}
+      <div>
+        <h1 style={{ fontSize: 18, fontWeight: 700, color: SLATE, }}>Third Party Creatives</h1>
+        <p style={{ fontSize: 11, color: SLATE_500, marginTop: 1, letterSpacing: "0.04em", fontWeight: 500, }}>ALL THIRD PARTY FILES &amp; BACKUP IMAGES ACROSS CAMPAIGNS</p>
       </div>
+
+      {/* Stats */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 16, marginBottom: 20,
+      }}>
+        {[
+          { label: 'Total Third Party Files', value: totalFiles, color: AMBER, bg: AMBER_LIGHT, border: AMBER_BORDER },
+          { label: 'With Input File', value: withInputFile, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
+          { label: 'With Backup Image', value: withBackupImage, color: GREEN, bg: GREEN_LIGHT, border: GREEN_BORDER },
+        ].map(s => (
+          <div key={s.label} style={{
+            background: WHITE, border: `1px solid ${SLATE_300}`,
+            borderRadius: 12, padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 10,
+              background: s.bg, border: `1px solid ${s.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, fontWeight: 800, color: s.color,
+            }}>{s.value}</div>
+            <div style={{ fontSize: 13, color: SLATE_500, fontWeight: 500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 18,
+        marginBottom: 10, fontSize: 11.5, color: SLATE_500,
+      }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: BLUE, background: BLUE_LIGHT,
+            padding: '1px 5px', borderRadius: 3, border: `1px solid ${BLUE_LIGHT}`,
+          }}><CodeOutlined /></span>
+          Third party input file
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: BLUE, background: BLUE_LIGHT,
+            padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
+          }}>IMG</span>
+          Backup image
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <FileOutlined style={{ fontSize: 12 }} /> Extension badge = file type
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <EyeOutlined style={{ fontSize: 12 }} /> Click name or eye icon to preview
+        </span>
+      </div>
+
+      {/* Filters */}
+      <div style={{
+        background: WHITE, borderRadius: 12, padding: '14px 20px',
+        border: `1px solid ${SLATE_300}`, marginBottom: 16,
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <Input
+          placeholder="Search by campaign, line item, file name…"
+          prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, minWidth: 240, height: 36 }}
+          allowClear
+        />
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchData}
+          style={{ height: 36, color: SLATE_500, border: `1px solid ${SLATE_300}` }}
+        >
+          Refresh
+        </Button>
+        <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
+          {filtered.length} of {totalFiles} files
+        </Text>
+      </div>
+
+      {/* Table */}
+      <div style={{
+        background: WHITE, borderRadius: 12,
+        border: `1px solid ${SLATE_300}`,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden',
+      }}>
+        <Table
+          columns={columns}
+          dataSource={filtered}
+          rowKey="key"
+          loading={loading}
+          scroll={{ x: 1400 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (t, r) => `${r[0]}–${r[1]} of ${t}`,
+          }}
+          style={{ fontSize: 13 }}
+          locale={{
+            emptyText: (
+              <div style={{ padding: '40px 0', textAlign: 'center', color: SLATE_500 }}>
+                <FileImageOutlined style={{ fontSize: 36, color: SLATE_300, display: 'block', marginBottom: 12 }} />
+                No third party creatives found.
+              </div>
+            ),
+          }}
+        />
+      </div>
+
 
       {/* Preview Modal */}
       {previewOpen && previewUrl && (
@@ -743,6 +703,7 @@ export default function Third_Party_Creative() {
           background: #fafbff !important;
         }
       `}</style>
-    </div>
+
+    </>
   );
 }

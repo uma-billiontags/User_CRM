@@ -375,7 +375,7 @@
 /* ── Step Content Card ── */
 .cc-content-wrap {
   flex: 1;
-  padding: 24px 28px 0;
+  padding: 24px 0px 0;
   animation: stepIn 0.28s ease both;
 }
 

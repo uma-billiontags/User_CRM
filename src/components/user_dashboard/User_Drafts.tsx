@@ -5,13 +5,12 @@ import {
 } from 'antd';
 import {
   SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined,
-  FileTextOutlined, RightOutlined, ExclamationCircleOutlined,
+  FileTextOutlined, ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import Sidebar from '../shared/Sidebar';
 import { getAllDrafts, type SavedDraft } from '../user_dashboard/Campaign_Create';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { confirm } = Modal;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -24,7 +23,6 @@ const SLATE = '#0F172A';
 const SLATE_300 = '#CBD5E1';
 const SLATE_500 = '#64748B';
 const WHITE = '#FFFFFF';
-const BG = '#F8FAFC';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function deleteDraft(draftId: string): void {
@@ -68,8 +66,6 @@ function getStepColor(step: number): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function User_Drafts() {
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const sideWidth = collapsed ? 64 : 240;
 
   const [drafts, setDrafts] = useState<SavedDraft[]>([]);
   const [filtered, setFiltered] = useState<SavedDraft[]>([]);
@@ -278,195 +274,195 @@ export default function User_Drafts() {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: BG, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-
-      <div style={{ marginLeft: sideWidth, flex: 1, display: 'flex', flexDirection: 'column', transition: 'margin-left 0.25s', minWidth: 0 }}>
-
-        {/* ─── Header ─────────────────────────────────────────────────────── */}
-        <header style={{
-          background: WHITE, borderBottom: `1px solid ${SLATE_300}`,
-          padding: '0 28px', height: 64,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 50,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: SLATE_500, cursor: 'pointer' }} onClick={() => navigate('/user_campaigns')}>
-              Campaigns
-            </span>
-            <RightOutlined style={{ fontSize: 11, color: SLATE_500 }} />
-            <div>
-              <Title level={5} style={{ margin: 0, color: SLATE }}>My Drafts</Title>
-              <Text style={{ fontSize: 11, color: SLATE_500, letterSpacing: '0.04em' }}>
-                SAVED CAMPAIGN DRAFTS
-              </Text>
-            </div>
+    <>
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          {/* Left Side */}
+          <div>
+            <h1
+              style={{ fontSize: 18, fontWeight: 700, color: SLATE, }}>
+              My Drafts
+            </h1>
+            <p
+              style={{ fontSize: 11, color: SLATE_500, marginTop: 1, letterSpacing: "0.04em", fontWeight: 500, }}
+            >
+              SAVED CAMPAIGN DRAFTS
+            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Right Side */}
+          <Button
+            type="primary"
+            onClick={() => navigate('/campaign_create')}
+            style={{
+              borderRadius: 9,
+              background: BLUE,
+              color: WHITE,
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              height: 36,
+              border: 'none',
+            }}
+          >
+            + NEW CAMPAIGN
+          </Button>
+        </div>
+
+
+        {/* ─── Filters ────────────────────────────────────────────────── */}
+        <div style={{
+          background: WHITE, borderRadius: 12, padding: '16px 20px',
+          border: `1px solid ${SLATE_300}`, marginBottom: 16,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        }}>
+          <Input
+            placeholder="Search by draft name, campaign, advertiser…"
+            prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: 240, height: 36 }}
+            allowClear
+          />
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={loadDrafts}
+            style={{
+              height: 36, borderRadius: 8, border: `1px solid E2E8F0`,
+              background: '#FFFFFF', color: '#64748B', fontSize: 12, fontWeight: 600,
+            }}
+          >
+            Refresh
+          </Button>
+          <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
+            {filtered.length} of {drafts.length} draft{drafts.length !== 1 ? 's' : ''}
+          </Text>
+        </div>
+
+        {/* ─── Table ──────────────────────────────────────────────────── */}
+        {drafts.length === 0 ? (
+          /* Empty state */
+          <div style={{
+            background: WHITE, borderRadius: 16,
+            border: `1px solid ${SLATE_300}`,
+            padding: '64px 24px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 16,
+          }}>
+            <div style={{ width: 72, height: 72, borderRadius: 18, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileTextOutlined style={{ fontSize: 32, color: SLATE_500 }} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: SLATE, marginBottom: 6 }}>No drafts saved yet</div>
+              <div style={{ fontSize: 13, color: SLATE_500, maxWidth: 320 }}>
+                When you click "Save Draft" while creating a campaign, it will appear here.
+              </div>
+            </div>
             <Button
               type="primary"
               onClick={() => navigate('/campaign_create')}
-              style={{
-                padding: '8px 16px', border: 'none', borderRadius: 9,
-                background: BLUE, color: WHITE, fontSize: 12,
-                fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em',
-                fontFamily: 'inherit',
-              }}
+              style={{ background: BLUE, borderColor: BLUE, borderRadius: 8, fontWeight: 600 }}
             >
-              + NEW CAMPAIGN
+              Create New Campaign
             </Button>
           </div>
-        </header>
-
-        <main style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-          {/* ─── Filters ────────────────────────────────────────────────── */}
+        ) : (
           <div style={{
-            background: WHITE, borderRadius: 12, padding: '16px 20px',
-            border: `1px solid ${SLATE_300}`, marginBottom: 16,
-            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+            background: WHITE, borderRadius: 12,
+            border: `1px solid ${SLATE_300}`,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            overflow: 'hidden',
           }}>
-            <Input
-              placeholder="Search by draft name, campaign, advertiser…"
-              prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ flex: 1, minWidth: 240, height: 36 }}
-              allowClear
+            <Table
+              columns={columns}
+              dataSource={filtered}
+              rowKey="draftId"
+              scroll={{ x: 1600 }}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} drafts`,
+                style: { padding: '12px 16px' },
+              }}
+              expandable={{
+                expandedRowRender: (record: SavedDraft) => {
+                  const lineItems = record.lineItems || [];
+                  if (lineItems.length === 0) {
+                    return <Text style={{ color: SLATE_500, fontSize: 12 }}>No line items in this draft.</Text>;
+                  }
+                  return (
+                    <div style={{ padding: '8px 0' }}>
+                      <Text strong style={{ fontSize: 12, color: SLATE, marginBottom: 8, display: 'block' }}>
+                        Line Items ({lineItems.length})
+                      </Text>
+                      <Table
+                        size="small"
+                        dataSource={lineItems}
+                        rowKey="id"
+                        pagination={false}
+                        columns={[
+                          {
+                            title: 'Line Item ID',
+                            dataIndex: 'id',
+                            key: 'id',
+                            render: (v: string) => (
+                              <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#7C3AED', background: '#EDE9FE', padding: '2px 6px', borderRadius: 4 }}>{v}</span>
+                            ),
+                          },
+                          {
+                            title: 'Name',
+                            dataIndex: 'lineItemName',
+                            key: 'lineItemName',
+                            render: (v: string) => <Text style={{ fontSize: 12 }}>{v || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Unnamed</span>}</Text>,
+                          },
+                          {
+                            title: 'Start Date',
+                            dataIndex: 'startDate',
+                            key: 'startDate',
+                            render: (v: string) => <Text style={{ fontSize: 12 }}>{v || '—'}</Text>,
+                          },
+                          {
+                            title: 'End Date',
+                            dataIndex: 'endDate',
+                            key: 'endDate',
+                            render: (v: string) => <Text style={{ fontSize: 12 }}>{v || '—'}</Text>,
+                          },
+                          {
+                            title: 'Ad Format',
+                            dataIndex: 'adFormat',
+                            key: 'adFormat',
+                            render: (v: string) => v
+                              ? <Tag color="blue" style={{ fontSize: 10 }}>{v}</Tag>
+                              : <Text style={{ color: '#94a3b8', fontSize: 11, fontStyle: 'italic' }}>Not set</Text>,
+                          },
+                          {
+                            title: 'Impressions',
+                            dataIndex: 'impressions',
+                            key: 'impressions',
+                            render: (v: string) => <Text style={{ fontSize: 12 }}>{v ? Number(v).toLocaleString('en-IN') : '—'}</Text>,
+                          },
+                        ]}
+                        style={{ background: '#F8FAFC', borderRadius: 8 }}
+                      />
+                    </div>
+                  );
+                },
+                rowExpandable: (record) => (record.lineItems?.length ?? 0) > 0,
+              }}
+              rowClassName={() => 'draft-row'}
+              style={{ fontSize: 13 }}
             />
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={loadDrafts}
-              style={{
-                        height: 36, borderRadius: 8, border: `1px solid E2E8F0`,
-                        background: '#FFFFFF', color: '#64748B', fontSize: 12, fontWeight: 600,
-                    }}
-            >
-              Refresh
-            </Button>
-            <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
-              {filtered.length} of {drafts.length} draft{drafts.length !== 1 ? 's' : ''}
-            </Text>
           </div>
+        )}
 
-          {/* ─── Table ──────────────────────────────────────────────────── */}
-          {drafts.length === 0 ? (
-            /* Empty state */
-            <div style={{
-              background: WHITE, borderRadius: 16,
-              border: `1px solid ${SLATE_300}`,
-              padding: '64px 24px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: 16,
-            }}>
-              <div style={{ width: 72, height: 72, borderRadius: 18, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileTextOutlined style={{ fontSize: 32, color: SLATE_500 }} />
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: SLATE, marginBottom: 6 }}>No drafts saved yet</div>
-                <div style={{ fontSize: 13, color: SLATE_500, maxWidth: 320 }}>
-                  When you click "Save Draft" while creating a campaign, it will appear here.
-                </div>
-              </div>
-              <Button
-                type="primary"
-                onClick={() => navigate('/campaign_create')}
-                style={{ background: BLUE, borderColor: BLUE, borderRadius: 8, fontWeight: 600 }}
-              >
-                Create New Campaign
-              </Button>
-            </div>
-          ) : (
-            <div style={{
-              background: WHITE, borderRadius: 12,
-              border: `1px solid ${SLATE_300}`,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              overflow: 'hidden',
-            }}>
-              <Table
-                columns={columns}
-                dataSource={filtered}
-                rowKey="draftId"
-                scroll={{ x: 1600 }}
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  pageSizeOptions: ['10', '20', '50'],
-                  showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} drafts`,
-                  style: { padding: '12px 16px' },
-                }}
-                expandable={{
-                  expandedRowRender: (record: SavedDraft) => {
-                    const lineItems = record.lineItems || [];
-                    if (lineItems.length === 0) {
-                      return <Text style={{ color: SLATE_500, fontSize: 12 }}>No line items in this draft.</Text>;
-                    }
-                    return (
-                      <div style={{ padding: '8px 0' }}>
-                        <Text strong style={{ fontSize: 12, color: SLATE, marginBottom: 8, display: 'block' }}>
-                          Line Items ({lineItems.length})
-                        </Text>
-                        <Table
-                          size="small"
-                          dataSource={lineItems}
-                          rowKey="id"
-                          pagination={false}
-                          columns={[
-                            {
-                              title: 'Line Item ID',
-                              dataIndex: 'id',
-                              key: 'id',
-                              render: (v: string) => (
-                                <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#7C3AED', background: '#EDE9FE', padding: '2px 6px', borderRadius: 4 }}>{v}</span>
-                              ),
-                            },
-                            {
-                              title: 'Name',
-                              dataIndex: 'lineItemName',
-                              key: 'lineItemName',
-                              render: (v: string) => <Text style={{ fontSize: 12 }}>{v || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Unnamed</span>}</Text>,
-                            },
-                            {
-                              title: 'Start Date',
-                              dataIndex: 'startDate',
-                              key: 'startDate',
-                              render: (v: string) => <Text style={{ fontSize: 12 }}>{v || '—'}</Text>,
-                            },
-                            {
-                              title: 'End Date',
-                              dataIndex: 'endDate',
-                              key: 'endDate',
-                              render: (v: string) => <Text style={{ fontSize: 12 }}>{v || '—'}</Text>,
-                            },
-                            {
-                              title: 'Ad Format',
-                              dataIndex: 'adFormat',
-                              key: 'adFormat',
-                              render: (v: string) => v
-                                ? <Tag color="blue" style={{ fontSize: 10 }}>{v}</Tag>
-                                : <Text style={{ color: '#94a3b8', fontSize: 11, fontStyle: 'italic' }}>Not set</Text>,
-                            },
-                            {
-                              title: 'Impressions',
-                              dataIndex: 'impressions',
-                              key: 'impressions',
-                              render: (v: string) => <Text style={{ fontSize: 12 }}>{v ? Number(v).toLocaleString('en-IN') : '—'}</Text>,
-                            },
-                          ]}
-                          style={{ background: '#F8FAFC', borderRadius: 8 }}
-                        />
-                      </div>
-                    );
-                  },
-                  rowExpandable: (record) => (record.lineItems?.length ?? 0) > 0,
-                }}
-                rowClassName={() => 'draft-row'}
-                style={{ fontSize: 13 }}
-              />
-            </div>
-          )}
-
-        </main>
       </div>
 
       <style>{`
@@ -480,6 +476,6 @@ export default function User_Drafts() {
           letter-spacing: 0.04em;
         }
       `}</style>
-    </div>
+    </>
   );
 }

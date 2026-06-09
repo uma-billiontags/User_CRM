@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Form, Input, Select, Button, DatePicker, InputNumber, message, Spin
 } from 'antd';
 import {
   ArrowRightOutlined, CheckOutlined,
-  PlusOutlined, RightOutlined,
+  PlusOutlined,
   CloseOutlined, InfoCircleOutlined,
-  EnvironmentOutlined, DeleteOutlined, ArrowLeftOutlined,
+  EnvironmentOutlined, DeleteOutlined, 
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import '../styles/Campaign_Create.css'; // reuse same styles
-import Sidebar from '../shared/Sidebar';
 import type { LineItem, GeoLocation } from '../types/campaign.form.types';
 
 dayjs.extend(isBetween);
@@ -42,7 +41,6 @@ const BLUE = '#2563EB';
 const BLUE_LIGHT = '#EFF6FF';
 const BLUE_MID = '#BFDBFE';
 const SLATE = '#0F172A';
-const SLATE_300 = '#CBD5E1';
 const SLATE_500 = '#64748B';
 const WHITE = '#FFFFFF';
 
@@ -87,7 +85,19 @@ function apiLineItemToForm(li: any): LineItem {
     adSubFormatOpen: false,
     adSubFormat: li.ad_sub_format ?? '',
     rate: li.rate ? String(li.rate) : '',
-    
+
+    // ── New targeting fields (parse from API or default to empty) ──
+    age: li.age ? (Array.isArray(li.age) ? li.age : li.age.split(',').map((s: string) => s.trim()).filter(Boolean)) : [],
+    gender: li.gender ? (Array.isArray(li.gender) ? li.gender : li.gender.split(',').map((s: string) => s.trim()).filter(Boolean)) : [],
+    geoLocations: (() => {
+      if (!li.geo_targeting) return [];
+      if (Array.isArray(li.geo_targeting)) return li.geo_targeting;
+      try { return JSON.parse(li.geo_targeting); } catch { return []; }
+    })(),
+    platforms: li.platforms ? (Array.isArray(li.platforms) ? li.platforms : li.platforms.split(',').map((s: string) => s.trim()).filter(Boolean)) : [],
+    freqCap: li.frequency_cap ? String(li.frequency_cap) : '',
+    brandSafety: li.brand_safety ?? '',
+    lineItemViewability: li.viewability_goal ? String(li.viewability_goal) : '',
 
   };
 }
@@ -331,8 +341,6 @@ function LineItemCard({ item, index, campaignStart, campaignEnd, onChange, onRem
 export default function Edit_Campaign() {
   const { campaign_id } = useParams<{ campaign_id: string }>();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const sideWidth = collapsed ? 64 : 240;
 
   // Loading / error state
   const [fetching, setFetching] = useState(true);
@@ -495,16 +503,16 @@ export default function Edit_Campaign() {
       }))
     ));
 
-    const userId   = localStorage.getItem('user_id');
-const userSource = localStorage.getItem('user_source'); // "team" or "user"
+    const userId = localStorage.getItem('user_id');
+    const userSource = localStorage.getItem('user_source'); // "team" or "user"
 
-if (userSource === 'team') {
-  // logged-in user is a team member → send team_id
-  fd.append('team_id', userId ?? '');
-} else {
-  // logged-in user is a client/admin → send user_id
-  fd.append('user_id', userId ?? '');
-}
+    if (userSource === 'team') {
+      // logged-in user is a team member → send team_id
+      fd.append('team_id', userId ?? '');
+    } else {
+      // logged-in user is a client/admin → send user_id
+      fd.append('user_id', userId ?? '');
+    }
 
     try {
       const res = await fetch(`${BASE_URL}/update_campaign/${campaign_id}/`, {
@@ -561,409 +569,376 @@ if (userSource === 'team') {
   }
 
   return (
-    <div className="cc-root">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-
-      <div className="cc-main" style={{ marginLeft: sideWidth }}>
-
-        {/* Topbar */}
-        <header className="cc-topbar">
-          <div className="cc-topbar-breadcrumb">
-            <Link to="/user_campaigns" style={{ color: SLATE_500, textDecoration: 'none' }}>Campaigns</Link>
-            <RightOutlined style={{ fontSize: 13 }} />
-            <span
-              onClick={() => navigate(`/campaign/${campaign_id}`)}
-              style={{ color: SLATE_500, cursor: 'pointer' }}
-            >
-              {campaign_id}
-            </span>
-            <RightOutlined style={{ fontSize: 13 }} />
-            <span style={{ color: SLATE, fontWeight: 600 }}>Edit Campaign</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/campaign/${campaign_id}`)}
-              style={{ border: `1px solid ${SLATE_300}`, color: SLATE_500 }}
-            >
-              Back to Campaign
-            </Button>
-          </div>
-        </header>
-
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-
-          <div className="cc-page-header">
-            <h1 className="cc-page-title">Edit Campaign</h1>
-            <p className="cc-page-sub">Update the campaign details below — <strong>{campaign_id}</strong></p>
-          </div>
-
-          {submitStatus === 'success' && (
-            <div className="cc-banner cc-banner-success">✅ Campaign updated successfully! Redirecting…</div>
-          )}
-          {submitStatus === 'error' && (
-            <div className="cc-banner cc-banner-error">❌ Update failed: {errorMsg}</div>
-          )}
-
-          {/* Stepper */}
-          <div className="cc-stepper-wrap">
-            <div className="cc-stepper">
-              {STEPS.map((s, i) => {
-                const isActive = s.n === activeStep;
-                const isDone = s.n < activeStep;
-                return (
-                  <React.Fragment key={s.n}>
-                    <div
-                      className={`cc-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}
-                      onClick={() => isDone && setActiveStep(s.n)}
-                    >
-                      <div className={`cc-step-circle ${isActive ? 'is-active' : isDone ? 'is-done' : 'inactive'}`}>
-                        {isDone ? <CheckOutlined style={{ fontSize: 13 }} /> : s.n}
-                      </div>
-                      <div>
-                        <div className={`cc-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</div>
-                        <div className={`cc-step-sub ${isActive ? 'active' : ''}`}>{s.sub}</div>
-                      </div>
-                    </div>
-                    {i < STEPS.length - 1 && <div className={`cc-step-connector ${isDone ? 'done' : ''}`} />}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Step Content */}
-          <div className="cc-content-wrap">
-            <div className="cc-card">
-              <div className="cc-card-header">
-                <div className="cc-card-step-badge">{activeStep}</div>
-                <div>
-                  <div className="cc-card-title">{STEPS[activeStep - 1].label}</div>
-                  <div className="cc-card-sub">{STEPS[activeStep - 1].sub}</div>
-                </div>
-                <div className="cc-card-step-count">Step {activeStep} of {STEPS.length}</div>
-              </div>
-
-              <div className="cc-card-body">
-
-                {/* ── STEP 1: Client & Advertiser ── */}
-                {activeStep === 1 && (
-                  <div className="cc-form-section-sm">
-                    <Form layout="vertical" className="cc-form">
-                      <Form.Item label="Company Name" required>
-                        <Input value={client} disabled style={{ fontWeight: 600 }} />
-                      </Form.Item>
-                      <Form.Item label="Advertiser (Brand)" required>
-                        <Input placeholder="Enter advertiser name…" value={advertiser} onChange={e => setAdvertiser(e.target.value)} style={{ width: '100%', height: 38 }} />
-                      </Form.Item>
-                      <InfoBox variant="blue">
-                        Changing the advertiser will affect all reports mapped to this campaign.
-                      </InfoBox>
-                      <Form.Item label="Website URL">
-                        <Input placeholder="https://" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} style={{ height: 38 }} />
-                      </Form.Item>
-                    </Form>
-                  </div>
-                )}
-
-                {/* ── STEP 2: Campaign Details ── */}
-                {activeStep === 2 && (
-                  <div className="cc-form-section-sm">
-                    <Form layout="vertical" className="cc-form">
-                      <div style={{ marginBottom: 16 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: SLATE_500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Campaign ID: </span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: BLUE, fontFamily: 'monospace' }}>{campaign_id}</span>
-                      </div>
-                      <div className="cc-row-grid">
-                        <Form.Item label="Client Campaign ID">
-                          <Input value={clientCampaignId} onChange={e => setClientCampaignId(e.target.value)} style={{ height: 38 }} />
-                        </Form.Item>
-                        <Form.Item label="Purchase Order ID">
-                          <Input value={purchaseOrderId} onChange={e => setPurchaseOrderId(e.target.value)} style={{ height: 38 }} />
-                        </Form.Item>
-                        <Form.Item label="Campaign Name" required>
-                          <Input value={campaignName} onChange={e => setCampaignName(e.target.value)} style={{ height: 38 }} />
-                        </Form.Item>
-                        <Form.Item label="Campaign Type" required>
-                          <Select
-                            value={campaignType || undefined}
-                            onChange={setCampaignType}
-                            placeholder="Select type…"
-                            options={toOpts(['Brand Awareness', 'Performance', 'Retargeting', 'Prospecting', 'Lead Generation'])}
-                            style={{ width: '100%', height: 38 }}
-                          />
-                        </Form.Item>
-                        <Form.Item label="Campaign Start Date" required>
-                          <DatePicker
-                            style={{ width: '100%', height: 38 }}
-                            value={startDate ? dayjs(startDate) : null}
-                            onChange={(_, ds) => setStartDate(typeof ds === 'string' ? ds : '')}
-                          />
-                        </Form.Item>
-                        <Form.Item label="Campaign End Date" required>
-                          <DatePicker
-                            style={{ width: '100%', height: 38 }}
-                            value={endDate ? dayjs(endDate) : null}
-                            onChange={(_, ds) => setEndDate(typeof ds === 'string' ? ds : '')}
-                          />
-                        </Form.Item>
-                        <Form.Item label="Buying Type" required>
-                          <Select
-                            mode="multiple" value={buyingType}
-                            onChange={(vals: string[]) => setBuyingType(vals)}
-                            placeholder="Select buying type…"
-                            style={{ width: '100%' }} maxTagCount="responsive"
-                            options={[
-                              { value: 'Programmatic (DV360)', label: 'Programmatic (DV360)' },
-                              { value: 'Direct', label: 'Direct' },
-                              { value: 'Programmatic Guaranteed', label: 'Programmatic Guaranteed' },
-                              { value: 'Preferred Deal', label: 'Preferred Deal' },
-                              { value: 'Open Auction', label: 'Open Auction' },
-                            ]}
-                          />
-                        </Form.Item>
-                        <Form.Item label="Campaign Objective" required>
-                          <Select
-                            value={objective || undefined}
-                            onChange={setObjective}
-                            placeholder="Select objective…"
-                            options={toOpts(['Increase Brand Awareness', 'Drive Website Traffic', 'Generate Leads', 'Boost Sales', 'App Installs'])}
-                            style={{ width: '100%', height: 38 }}
-                          />
-                        </Form.Item>
-                      </div>
-                      <Form.Item label="Notes">
-                        <TextArea value={notes} onChange={e => setNotes(e.target.value)} rows={4} />
-                      </Form.Item>
-                    </Form>
-                  </div>
-                )}
-
-                {/* ── STEP 3: Targeting ── */}
-                {activeStep === 3 && (
-                  <div className="cc-form-section">
-                    <Form layout="vertical" className="cc-form">
-                      <div className="cc-row-grid">
-                        <Form.Item label="Age" required>
-                          <Select
-                            mode="multiple" value={age}
-                            onChange={(vals: string[]) => setAge(vals)}
-                            placeholder="Select Age" style={{ width: '100%' }}
-                            maxTagCount="responsive"
-                            options={['18 to 24', '25 to 34', '35 to 44', '45 to 54', '55 to 64', 'Others'].map(v => ({ value: v, label: v }))}
-                          />
-                        </Form.Item>
-                        <Form.Item label="Gender" required>
-                          <Select
-                            mode="multiple" value={gender}
-                            onChange={(vals: string[]) => setGender(vals)}
-                            placeholder="Select Gender" style={{ width: '100%' }}
-                            maxTagCount="responsive"
-                            options={[{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }]}
-                          />
-                        </Form.Item>
-                      </div>
-
-                      <Form.Item label="Geo Targeting">
-                        <div className="cc-geo-wrap">
-                          <GeoTargeting
-                            locations={geoLocations}
-                            onAdd={(loc: GeoLocation) => setGeoLocations(p => [...p, loc])}
-                            onRemove={(idx: number) => setGeoLocations(p => p.filter((_, i) => i !== idx))}
-                          />
-                        </div>
-                      </Form.Item>
-
-                      <Form.Item label="Platform / Inventory" required>
-                        <Select
-                          mode="multiple" value={platforms}
-                          onChange={(vals: string[]) => setPlatforms(vals)}
-                          placeholder="Select Platforms" style={{ width: '100%' }}
-                          maxTagCount="responsive"
-                          options={['Display', 'Video', 'PMP', 'CTV', 'Audio', 'Native', 'DOOH', 'Mobile'].map(v => ({ value: v, label: v }))}
-                        />
-                      </Form.Item>
-
-                      <div className="cc-row-grid">
-                        <Form.Item label="Frequency Cap">
-                          <div className="cc-unit-input">
-                            <InputNumber
-                              min={1} placeholder="e.g. 3"
-                              value={freqCap ? Number(freqCap) : undefined}
-                              onChange={v => setFreqCap(String(v ?? ''))}
-                              style={{ width: 80, height: 38 }}
-                            />
-                            <span className="cc-unit-label">impressions / user</span>
-                          </div>
-                        </Form.Item>
-                        <Form.Item label="Brand Safety Level" required>
-                          <Select
-                            value={brandSafety || undefined}
-                            onChange={setBrandSafety}
-                            placeholder="Select level…"
-                            options={toOpts(['Standard', 'Strict', 'Custom'])}
-                            style={{ width: '100%', height: 38 }}
-                          />
-                        </Form.Item>
-                      </div>
-
-                      <Form.Item label="Viewability Goal">
-                        <div className="cc-unit-input">
-                          <InputNumber
-                            min={0} max={100} placeholder="e.g. 70"
-                            value={viewability ? Number(viewability) : undefined}
-                            onChange={v => setViewability(String(v ?? ''))}
-                            style={{ width: 80, height: 38 }}
-                          />
-                          <span className="cc-unit-label">%</span>
-                        </div>
-                      </Form.Item>
-                    </Form>
-                  </div>
-                )}
-
-                {/* ── STEP 4: Line Items ── */}
-                {activeStep === 4 && (
-                  <div className="cc-form-section">
-                    {lineItems.length === 0 && (
-                      <div style={{ background: '#fffbeb', border: '0.5px solid #fcd34d', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12.5, color: '#92400e' }}>
-                        No line items found for this campaign.
-                      </div>
-                    )}
-                    {lineItems.map((item, idx) => (
-                      <LineItemCard
-                        key={item.id}
-                        item={item}
-                        index={idx}
-                        campaignStart={startDate}
-                        campaignEnd={endDate}
-                        onChange={handleLineItemChange}
-                        onRemove={handleLineItemRemove}
-                        canRemove={lineItems.length > 1}
-                      />
-                    ))}
-                    <InfoBox variant="amber">
-                      Note: You can edit existing line item details here. To add new line items or manage creatives, use the campaign dashboard after saving.
-                    </InfoBox>
-                  </div>
-                )}
-
-                {/* ── STEP 5: Review ── */}
-                {activeStep === 5 && (
-                  <div className="cc-form-section">
-                    <div className="cc-review-ready">
-                      <div className="cc-review-ready-icon">
-                        <CheckOutlined style={{ color: WHITE, fontSize: 18 }} />
-                      </div>
-                      <div>
-                        <div className="cc-review-ready-title">Ready to update</div>
-                        <div className="cc-review-ready-sub">Review the changes below before saving.</div>
-                      </div>
-                    </div>
-
-                    <div className="cc-review-header">
-                      <span className="cc-review-label">Campaign Summary</span>
-                      <button className="cc-review-edit-btn" onClick={() => setActiveStep(1)}>← Edit Details</button>
-                    </div>
-
-                    <div className="cc-review-table">
-                      {[
-                        { label: 'Campaign ID', value: campaign_id },
-                        { label: 'Client', value: client },
-                        { label: 'Advertiser', value: advertiser },
-                        { label: 'Website URL', value: websiteUrl },
-                        { label: 'Campaign Name', value: campaignName },
-                        { label: 'Client Campaign ID', value: clientCampaignId },
-                        { label: 'Purchase Order ID', value: purchaseOrderId },
-                        { label: 'Campaign Type', value: campaignType },
-                        { label: 'Buying Type', value: buyingType.join(', ') },
-                        { label: 'Objective', value: objective },
-                        { label: 'Notes', value: notes },
-                        { label: 'Age', value: age.join(', ') },
-                        { label: 'Gender', value: gender.join(', ') },
-                        { label: 'Platforms', value: platforms.join(', ') },
-                        { label: 'Brand Safety', value: brandSafety },
-                        { label: 'Viewability Goal', value: viewability ? `${viewability}%` : '—' },
-                        { label: 'Campaign Duration', value: durationDays > 0 ? `${startDate} → ${endDate} (${durationDays} days)` : '—' },
-                      ].map((row, i) => (
-                        <div key={row.label} className="cc-review-row" style={{ background: i % 2 === 0 ? WHITE : 'var(--slate-100)' }}>
-                          <span className="cc-review-row-key">{row.label}</span>
-                          <span className="cc-review-row-val">{row.value || '—'}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {lineItems.length > 0 && (
-                      <>
-                        <div className="cc-review-header" style={{ marginTop: 20 }}>
-                          <span className="cc-review-label">Line Items ({lineItems.length})</span>
-                        </div>
-                        {lineItems.map((li, i) => (
-                          <div key={li.id} style={{ border: '0.5px solid #e2e8f0', borderRadius: 10, marginBottom: 12, overflow: 'hidden' }}>
-                            <div style={{ background: '#f8fafc', padding: '8px 14px', fontSize: 12.5, fontWeight: 600, color: SLATE, borderBottom: '0.5px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#4f46e5', color: WHITE, fontSize: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
-                              {li.lineItemName}
-                              <span style={{ marginLeft: 'auto', fontSize: 11, fontFamily: 'monospace', background: '#EDE9FE', color: '#7C3AED', padding: '2px 8px', borderRadius: 4 }}>{li.id}</span>
-                            </div>
-                            <div className="cc-review-table">
-                              {[
-                                { label: 'Start Date', value: li.startDate },
-                                { label: 'End Date', value: li.endDate },
-                                { label: 'Ad Format', value: li.adFormat || '—' },       // ← no .join()
-
-                                { label: 'Impressions', value: li.impressions ? Number(li.impressions).toLocaleString('en-IN') : '—' },
-                                { label: 'Ethnicity', value: li.ethnicity || '—' },
-                              ].map((row, j) => (
-                                <div key={row.label} className="cc-review-row" style={{ background: j % 2 === 0 ? WHITE : 'var(--slate-100)' }}>
-                                  <span className="cc-review-row-key">{row.label}</span>
-                                  <span className="cc-review-row-val">{row.value || '—'}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                )}
-
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="cc-bottom-bar">
-            <Button className="cc-btn-cancel" onClick={() => navigate(`/campaign/${campaign_id}`)}>Cancel</Button>
-            <div className="cc-bottom-bar-actions">
-              {activeStep > 1 && (
-                <Button className="cc-btn-back" onClick={() => setActiveStep(s => s - 1)}>← Back</Button>
-              )}
-              {activeStep < 5 ? (
-                <Button
-                  type="primary"
-                  className="cc-btn-next"
-                  onClick={handleNextStep}
-                  icon={<ArrowRightOutlined />}
-                  iconPosition="end"
-                >
-                  Next Step
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  className="cc-btn-submit"
-                  loading={submitting}
-                  onClick={handleSubmit}
-                  icon={<CheckOutlined />}
-                >
-                  {submitting ? 'Saving…' : 'Save Changes'}
-                </Button>
-              )}
-            </div>
-          </div>
-
-        </main>
+    <>
+      <div >
+        <h1 style={{ fontSize: 18, fontWeight: 700, color: SLATE, }}>Edit Campaign</h1>
+        <p className="cc-page-sub">Update the campaign details below — <strong>{campaign_id}</strong></p>
       </div>
-    </div>
+
+      {submitStatus === 'success' && (
+        <div className="cc-banner cc-banner-success">✅ Campaign updated successfully! Redirecting…</div>
+      )}
+      {submitStatus === 'error' && (
+        <div className="cc-banner cc-banner-error">❌ Update failed: {errorMsg}</div>
+      )}
+
+      {/* Stepper */}
+      <div>
+        <div className="cc-stepper">
+          {STEPS.map((s, i) => {
+            const isActive = s.n === activeStep;
+            const isDone = s.n < activeStep;
+            return (
+              <React.Fragment key={s.n}>
+                <div
+                  className={`cc-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}
+                  onClick={() => isDone && setActiveStep(s.n)}
+                >
+                  <div className={`cc-step-circle ${isActive ? 'is-active' : isDone ? 'is-done' : 'inactive'}`}>
+                    {isDone ? <CheckOutlined style={{ fontSize: 13 }} /> : s.n}
+                  </div>
+                  <div>
+                    <div className={`cc-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</div>
+                    <div className={`cc-step-sub ${isActive ? 'active' : ''}`}>{s.sub}</div>
+                  </div>
+                </div>
+                {i < STEPS.length - 1 && <div className={`cc-step-connector ${isDone ? 'done' : ''}`} />}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Step Content */}
+      <div className="cc-content-wrap">
+        <div className="cc-card">
+          <div className="cc-card-header">
+            <div className="cc-card-step-badge">{activeStep}</div>
+            <div>
+              <div className="cc-card-title">{STEPS[activeStep - 1].label}</div>
+              <div className="cc-card-sub">{STEPS[activeStep - 1].sub}</div>
+            </div>
+            <div className="cc-card-step-count">Step {activeStep} of {STEPS.length}</div>
+          </div>
+
+          <div className="cc-card-body">
+
+            {/* ── STEP 1: Client & Advertiser ── */}
+            {activeStep === 1 && (
+              <div className="cc-form-section-sm">
+                <Form layout="vertical" className="cc-form">
+                  <Form.Item label="Company Name" required>
+                    <Input value={client} disabled style={{ fontWeight: 600 }} />
+                  </Form.Item>
+                  <Form.Item label="Advertiser (Brand)" required>
+                    <Input placeholder="Enter advertiser name…" value={advertiser} onChange={e => setAdvertiser(e.target.value)} style={{ width: '100%', height: 38 }} />
+                  </Form.Item>
+                  <InfoBox variant="blue">
+                    Changing the advertiser will affect all reports mapped to this campaign.
+                  </InfoBox>
+                  <Form.Item label="Website URL">
+                    <Input placeholder="https://" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} style={{ height: 38 }} />
+                  </Form.Item>
+                </Form>
+              </div>
+            )}
+
+            {/* ── STEP 2: Campaign Details ── */}
+            {activeStep === 2 && (
+              <div className="cc-form-section-sm">
+                <Form layout="vertical" className="cc-form">
+                  <div style={{ marginBottom: 16 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: SLATE_500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Campaign ID: </span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: BLUE, fontFamily: 'monospace' }}>{campaign_id}</span>
+                  </div>
+                  <div className="cc-row-grid">
+                    <Form.Item label="Client Campaign ID">
+                      <Input value={clientCampaignId} onChange={e => setClientCampaignId(e.target.value)} style={{ height: 38 }} />
+                    </Form.Item>
+                    <Form.Item label="Purchase Order ID">
+                      <Input value={purchaseOrderId} onChange={e => setPurchaseOrderId(e.target.value)} style={{ height: 38 }} />
+                    </Form.Item>
+                    <Form.Item label="Campaign Name" required>
+                      <Input value={campaignName} onChange={e => setCampaignName(e.target.value)} style={{ height: 38 }} />
+                    </Form.Item>
+                    <Form.Item label="Campaign Type" required>
+                      <Select
+                        value={campaignType || undefined}
+                        onChange={setCampaignType}
+                        placeholder="Select type…"
+                        options={toOpts(['Brand Awareness', 'Performance', 'Retargeting', 'Prospecting', 'Lead Generation'])}
+                        style={{ width: '100%', height: 38 }}
+                      />
+                    </Form.Item>
+                    <Form.Item label="Campaign Start Date" required>
+                      <DatePicker
+                        style={{ width: '100%', height: 38 }}
+                        value={startDate ? dayjs(startDate) : null}
+                        onChange={(_, ds) => setStartDate(typeof ds === 'string' ? ds : '')}
+                      />
+                    </Form.Item>
+                    <Form.Item label="Campaign End Date" required>
+                      <DatePicker
+                        style={{ width: '100%', height: 38 }}
+                        value={endDate ? dayjs(endDate) : null}
+                        onChange={(_, ds) => setEndDate(typeof ds === 'string' ? ds : '')}
+                      />
+                    </Form.Item>
+                    <Form.Item label="Buying Type" required>
+                      <Select
+                        mode="multiple" value={buyingType}
+                        onChange={(vals: string[]) => setBuyingType(vals)}
+                        placeholder="Select buying type…"
+                        style={{ width: '100%' }} maxTagCount="responsive"
+                        options={[
+                          { value: 'Programmatic (DV360)', label: 'Programmatic (DV360)' },
+                          { value: 'Direct', label: 'Direct' },
+                          { value: 'Programmatic Guaranteed', label: 'Programmatic Guaranteed' },
+                          { value: 'Preferred Deal', label: 'Preferred Deal' },
+                          { value: 'Open Auction', label: 'Open Auction' },
+                        ]}
+                      />
+                    </Form.Item>
+                    <Form.Item label="Campaign Objective" required>
+                      <Select
+                        value={objective || undefined}
+                        onChange={setObjective}
+                        placeholder="Select objective…"
+                        options={toOpts(['Increase Brand Awareness', 'Drive Website Traffic', 'Generate Leads', 'Boost Sales', 'App Installs'])}
+                        style={{ width: '100%', height: 38 }}
+                      />
+                    </Form.Item>
+                  </div>
+                  <Form.Item label="Notes">
+                    <TextArea value={notes} onChange={e => setNotes(e.target.value)} rows={4} />
+                  </Form.Item>
+                </Form>
+              </div>
+            )}
+
+            {/* ── STEP 3: Targeting ── */}
+            {activeStep === 3 && (
+              <div className="cc-form-section">
+                <Form layout="vertical" className="cc-form">
+                  <div className="cc-row-grid">
+                    <Form.Item label="Age" required>
+                      <Select
+                        mode="multiple" value={age}
+                        onChange={(vals: string[]) => setAge(vals)}
+                        placeholder="Select Age" style={{ width: '100%' }}
+                        maxTagCount="responsive"
+                        options={['18 to 24', '25 to 34', '35 to 44', '45 to 54', '55 to 64', 'Others'].map(v => ({ value: v, label: v }))}
+                      />
+                    </Form.Item>
+                    <Form.Item label="Gender" required>
+                      <Select
+                        mode="multiple" value={gender}
+                        onChange={(vals: string[]) => setGender(vals)}
+                        placeholder="Select Gender" style={{ width: '100%' }}
+                        maxTagCount="responsive"
+                        options={[{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }]}
+                      />
+                    </Form.Item>
+                  </div>
+
+                  <Form.Item label="Geo Targeting">
+                    <div className="cc-geo-wrap">
+                      <GeoTargeting
+                        locations={geoLocations}
+                        onAdd={(loc: GeoLocation) => setGeoLocations(p => [...p, loc])}
+                        onRemove={(idx: number) => setGeoLocations(p => p.filter((_, i) => i !== idx))}
+                      />
+                    </div>
+                  </Form.Item>
+
+                  <Form.Item label="Platform / Inventory" required>
+                    <Select
+                      mode="multiple" value={platforms}
+                      onChange={(vals: string[]) => setPlatforms(vals)}
+                      placeholder="Select Platforms" style={{ width: '100%' }}
+                      maxTagCount="responsive"
+                      options={['Display', 'Video', 'PMP', 'CTV', 'Audio', 'Native', 'DOOH', 'Mobile'].map(v => ({ value: v, label: v }))}
+                    />
+                  </Form.Item>
+
+                  <div className="cc-row-grid">
+                    <Form.Item label="Frequency Cap">
+                      <div className="cc-unit-input">
+                        <InputNumber
+                          min={1} placeholder="e.g. 3"
+                          value={freqCap ? Number(freqCap) : undefined}
+                          onChange={v => setFreqCap(String(v ?? ''))}
+                          style={{ width: 80, height: 38 }}
+                        />
+                        <span className="cc-unit-label">impressions / user</span>
+                      </div>
+                    </Form.Item>
+                    <Form.Item label="Brand Safety Level" required>
+                      <Select
+                        value={brandSafety || undefined}
+                        onChange={setBrandSafety}
+                        placeholder="Select level…"
+                        options={toOpts(['Standard', 'Strict', 'Custom'])}
+                        style={{ width: '100%', height: 38 }}
+                      />
+                    </Form.Item>
+                  </div>
+
+                  <Form.Item label="Viewability Goal">
+                    <div className="cc-unit-input">
+                      <InputNumber
+                        min={0} max={100} placeholder="e.g. 70"
+                        value={viewability ? Number(viewability) : undefined}
+                        onChange={v => setViewability(String(v ?? ''))}
+                        style={{ width: 80, height: 38 }}
+                      />
+                      <span className="cc-unit-label">%</span>
+                    </div>
+                  </Form.Item>
+                </Form>
+              </div>
+            )}
+
+            {/* ── STEP 4: Line Items ── */}
+            {activeStep === 4 && (
+              <div className="cc-form-section">
+                {lineItems.length === 0 && (
+                  <div style={{ background: '#fffbeb', border: '0.5px solid #fcd34d', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12.5, color: '#92400e' }}>
+                    No line items found for this campaign.
+                  </div>
+                )}
+                {lineItems.map((item, idx) => (
+                  <LineItemCard
+                    key={item.id}
+                    item={item}
+                    index={idx}
+                    campaignStart={startDate}
+                    campaignEnd={endDate}
+                    onChange={handleLineItemChange}
+                    onRemove={handleLineItemRemove}
+                    canRemove={lineItems.length > 1}
+                  />
+                ))}
+                <InfoBox variant="amber">
+                  Note: You can edit existing line item details here. To add new line items or manage creatives, use the campaign dashboard after saving.
+                </InfoBox>
+              </div>
+            )}
+
+            {/* ── STEP 5: Review ── */}
+            {activeStep === 5 && (
+              <div className="cc-form-section">
+                <div className="cc-review-ready">
+                  <div className="cc-review-ready-icon">
+                    <CheckOutlined style={{ color: WHITE, fontSize: 18 }} />
+                  </div>
+                  <div>
+                    <div className="cc-review-ready-title">Ready to update</div>
+                    <div className="cc-review-ready-sub">Review the changes below before saving.</div>
+                  </div>
+                </div>
+
+                <div className="cc-review-header">
+                  <span className="cc-review-label">Campaign Summary</span>
+                  <button className="cc-review-edit-btn" onClick={() => setActiveStep(1)}>← Edit Details</button>
+                </div>
+
+                <div className="cc-review-table">
+                  {[
+                    { label: 'Campaign ID', value: campaign_id },
+                    { label: 'Client', value: client },
+                    { label: 'Advertiser', value: advertiser },
+                    { label: 'Website URL', value: websiteUrl },
+                    { label: 'Campaign Name', value: campaignName },
+                    { label: 'Client Campaign ID', value: clientCampaignId },
+                    { label: 'Purchase Order ID', value: purchaseOrderId },
+                    { label: 'Campaign Type', value: campaignType },
+                    { label: 'Buying Type', value: buyingType.join(', ') },
+                    { label: 'Objective', value: objective },
+                    { label: 'Notes', value: notes },
+                    { label: 'Age', value: age.join(', ') },
+                    { label: 'Gender', value: gender.join(', ') },
+                    { label: 'Platforms', value: platforms.join(', ') },
+                    { label: 'Brand Safety', value: brandSafety },
+                    { label: 'Viewability Goal', value: viewability ? `${viewability}%` : '—' },
+                    { label: 'Campaign Duration', value: durationDays > 0 ? `${startDate} → ${endDate} (${durationDays} days)` : '—' },
+                  ].map((row, i) => (
+                    <div key={row.label} className="cc-review-row" style={{ background: i % 2 === 0 ? WHITE : 'var(--slate-100)' }}>
+                      <span className="cc-review-row-key">{row.label}</span>
+                      <span className="cc-review-row-val">{row.value || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {lineItems.length > 0 && (
+                  <>
+                    <div className="cc-review-header" style={{ marginTop: 20 }}>
+                      <span className="cc-review-label">Line Items ({lineItems.length})</span>
+                    </div>
+                    {lineItems.map((li, i) => (
+                      <div key={li.id} style={{ border: '0.5px solid #e2e8f0', borderRadius: 10, marginBottom: 12, overflow: 'hidden' }}>
+                        <div style={{ background: '#f8fafc', padding: '8px 14px', fontSize: 12.5, fontWeight: 600, color: SLATE, borderBottom: '0.5px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#4f46e5', color: WHITE, fontSize: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                          {li.lineItemName}
+                          <span style={{ marginLeft: 'auto', fontSize: 11, fontFamily: 'monospace', background: '#EDE9FE', color: '#7C3AED', padding: '2px 8px', borderRadius: 4 }}>{li.id}</span>
+                        </div>
+                        <div className="cc-review-table">
+                          {[
+                            { label: 'Start Date', value: li.startDate },
+                            { label: 'End Date', value: li.endDate },
+                            { label: 'Ad Format', value: li.adFormat || '—' },       // ← no .join()
+
+                            { label: 'Impressions', value: li.impressions ? Number(li.impressions).toLocaleString('en-IN') : '—' },
+                            { label: 'Ethnicity', value: li.ethnicity || '—' },
+                          ].map((row, j) => (
+                            <div key={row.label} className="cc-review-row" style={{ background: j % 2 === 0 ? WHITE : 'var(--slate-100)' }}>
+                              <span className="cc-review-row-key">{row.label}</span>
+                              <span className="cc-review-row-val">{row.value || '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="cc-bottom-bar">
+        <Button className="cc-btn-cancel" onClick={() => navigate(`/campaign/${campaign_id}`)}>Cancel</Button>
+        <div className="cc-bottom-bar-actions">
+          {activeStep > 1 && (
+            <Button className="cc-btn-back" onClick={() => setActiveStep(s => s - 1)}>← Back</Button>
+          )}
+          {activeStep < 5 ? (
+            <Button
+              type="primary"
+              className="cc-btn-next"
+              onClick={handleNextStep}
+              icon={<ArrowRightOutlined />}
+              iconPosition="end"
+            >
+              Next Step
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              className="cc-btn-submit"
+              loading={submitting}
+              onClick={handleSubmit}
+              icon={<CheckOutlined />}
+            >
+              {submitting ? 'Saving…' : 'Save Changes'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+    </>
   );
 }

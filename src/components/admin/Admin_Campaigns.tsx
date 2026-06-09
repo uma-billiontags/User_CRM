@@ -1569,6 +1569,19 @@ export default function Admin_Campaigns() {
                     <h1 style={{ fontSize: 20, fontWeight: 700, color: C.slate, margin: 0, letterSpacing: "-0.4px" }}>All Campaigns</h1>
                     <p style={{ fontSize: 11, color: C.slate500, margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.04em" }}>MANAGE & TRACK ALL CLIENT CAMPAIGNS</p>
                 </div>
+                <div>
+                    <Button
+                        onClick={() => navigate('/campaign_create', { state: { adminMode: true } })}
+                        style={{
+                            borderRadius: 9, border: "none",
+                            background: C.blue, color: "#fff",
+                            fontSize: 13, fontWeight: 700,
+                            boxShadow: `0 4px 14px ${C.green}44`,
+                        }}
+                    >
+                        <PlusOutlined /> Add New Campaign
+                    </Button>
+                </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>

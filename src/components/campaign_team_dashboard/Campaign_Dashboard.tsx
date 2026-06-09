@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Table, Tag, Badge, Button, Input, Select } from "antd";
 import { SearchOutlined, ReloadOutlined, EyeOutlined, CopyOutlined, CheckOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import Sidebar from "./CampaignSidebar";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -333,8 +332,6 @@ function CreativeIdCell({ id }: { id: string }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Campaign_Dashboard() {
     const navigate = useNavigate();
-    const [collapsed, setCollapsed] = useState(false);
-    const sideWidth = collapsed ? 64 : 240;
 
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
@@ -344,9 +341,6 @@ export default function Campaign_Dashboard() {
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
     const [deleteCampaign, setDeleteCampaign] = useState<Campaign | null>(null);
     const [deleting, setDeleting] = useState(false);
-
-    const clientName = localStorage.getItem('client_name') ?? '';
-    const avatarInitials = clientName ? clientName.charAt(0).toUpperCase() : 'U';
 
     const showToast = (message: string, type: "success" | "error" = "success") =>
         setToast({ message, type });
@@ -717,152 +711,124 @@ export default function Campaign_Dashboard() {
     ];
 
     return (
-        <div style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-            <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
+        <>
+            {/* Page heading */}
+            <div style={{ marginBottom: 20 }}>
+                <h1
+                    style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", }}>
+                    Campaign Dashboard
+                </h1>
+                <p
+                    style={{ fontSize: 11, color: "#64748B", marginTop: 1, letterSpacing: "0.04em", fontWeight: 500, }}
+                >
+                    MANAGE &amp; TRACK ALL CLIENT CAMPAIGNS
+                </p>
+            </div>
 
-            <div style={{ marginLeft: sideWidth, flex: 1, display: "flex", flexDirection: "column", transition: "margin-left 0.25s", minWidth: 0 }}>
+            {/* Stat Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
+                <StatCard label="Total Campaigns" value={totalCount} color={C.blue} bg={C.blueLight} icon="📊" active={cardFilter === "all"} onClick={() => setCardFilter("all")} />
+                <StatCard label="Active Campaigns" value={activeCount} color={C.green} bg={C.greenLight} icon="🟢" active={cardFilter === "active"} onClick={() => setCardFilter(cardFilter === "active" ? "all" : "active")} />
+                <StatCard label="Closed Campaigns" value={closedCount} color={C.red} bg={C.redLight} icon="🔴" active={cardFilter === "closed"} onClick={() => setCardFilter(cardFilter === "closed" ? "all" : "closed")} />
+            </div>
 
-                {/* Header */}
-                <header style={{
-                    background: C.white, borderBottom: `1px solid ${C.slate300}`,
-                    padding: "0 28px", height: 64,
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    position: "sticky", top: 0, zIndex: 50,
-                }}>
-                    <div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: C.slate }}>Campaign Dashboard</div>
-                        <div style={{ fontSize: 11, color: C.slate500, letterSpacing: "0.04em" }}>MANAGE &amp; TRACK ALL CLIENT CAMPAIGNS</div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-
-                        <div style={{
-                            width: 36, height: 36, borderRadius: '50%', background: C.blue,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: C.white, fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                        }}>
-                            {avatarInitials}
-                        </div>
-                    </div>
-                </header>
-
-                <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-
-                    {/* Page title */}
-                    <div style={{ marginBottom: 20 }}>
-                        <h1 style={{ fontSize: 20, fontWeight: 700, color: C.slate, margin: 0, letterSpacing: "-0.4px" }}>
-                            All Campaigns
-                        </h1>
-                        <p style={{ fontSize: 11, color: C.slate500, margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.04em" }}>
-                            MANAGE &amp; TRACK ALL CLIENT CAMPAIGNS
-                        </p>
-                    </div>
-
-                    {/* Stat Cards */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
-                        <StatCard label="Total Campaigns" value={totalCount} color={C.blue} bg={C.blueLight} icon="📊" active={cardFilter === "all"} onClick={() => setCardFilter("all")} />
-                        <StatCard label="Active Campaigns" value={activeCount} color={C.green} bg={C.greenLight} icon="🟢" active={cardFilter === "active"} onClick={() => setCardFilter(cardFilter === "active" ? "all" : "active")} />
-                        <StatCard label="Closed Campaigns" value={closedCount} color={C.red} bg={C.redLight} icon="🔴" active={cardFilter === "closed"} onClick={() => setCardFilter(cardFilter === "closed" ? "all" : "closed")} />
-                    </div>
-
-                    {/* Active filter pill */}
-                    {cardFilter !== "all" && (
-                        <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 12, color: C.slate500 }}>Filtered by:</span>
-                            <span style={{
-                                display: "inline-flex", alignItems: "center", gap: 6,
-                                padding: "3px 12px", borderRadius: 20,
-                                background: cardFilter === "active" ? C.greenLight : C.redLight,
-                                border: `1px solid ${cardFilter === "active" ? "#BBF7D0" : "#FECACA"}`,
-                                fontSize: 11, fontWeight: 700,
-                                color: cardFilter === "active" ? C.green : C.red,
-                            }}>
-                                {cardFilter === "active" ? "🟢 Active Campaigns" : "🔴 Closed Campaigns"}
-                                <button onClick={() => setCardFilter("all")} style={{ background: "none", border: "none", cursor: "pointer", color: cardFilter === "active" ? C.green : C.red, fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Filters */}
-                    <div style={{
-                        background: C.white, borderRadius: 12, padding: "14px 18px",
-                        border: `1px solid ${C.border}`, marginBottom: 16,
-                        display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+            {/* Active filter pill */}
+            {cardFilter !== "all" && (
+                <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12, color: C.slate500 }}>Filtered by:</span>
+                    <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "3px 12px", borderRadius: 20,
+                        background: cardFilter === "active" ? C.greenLight : C.redLight,
+                        border: `1px solid ${cardFilter === "active" ? "#BBF7D0" : "#FECACA"}`,
+                        fontSize: 11, fontWeight: 700,
+                        color: cardFilter === "active" ? C.green : C.red,
                     }}>
-                        <Input
-                            placeholder="Search by name, ID, advertiser, company…"
-                            prefix={<SearchOutlined style={{ color: C.slate500 }} />}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            allowClear
-                            style={{ flex: 1, minWidth: 240, height: 36 }}
-                        />
-                        <Select value={typeFilter} onChange={setTypeFilter} style={{ width: 180, height: 36 }}>
-                            <Option value="all">All Types</Option>
-                            {uniqueTypes.map((t) => <Option key={t} value={t}>{t}</Option>)}
-                        </Select>
-                        <Button
-                            onClick={fetchCampaigns}
-                            icon={<ReloadOutlined />}
-                            style={{ height: 36, borderRadius: 8, border: `1px solid ${C.border}`, background: C.white, color: C.slate500, fontSize: 12, fontWeight: 600 }}
-                        >
-                            Refresh
-                        </Button>
-                        <span style={{ fontSize: 12, color: C.slate500, marginLeft: "auto" }}>
-                            {filtered.length} of {campaigns.length} campaigns
-                        </span>
-                    </div>
+                        {cardFilter === "active" ? "🟢 Active Campaigns" : "🔴 Closed Campaigns"}
+                        <button onClick={() => setCardFilter("all")} style={{ background: "none", border: "none", cursor: "pointer", color: cardFilter === "active" ? C.green : C.red, fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
+                    </span>
+                </div>
+            )}
 
-                    {/* Table */}
-                    <div style={{
-                        background: C.white, borderRadius: 14, border: `1px solid ${C.border}`,
-                        overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                    }}>
-                        <Table
-                            columns={columns}
-                            dataSource={filtered}
-                            rowKey="campaign_id"
-                            loading={loading}
-                            scroll={{ x: 2200 }}
-                            pagination={{
-                                pageSize: 10,
-                                showSizeChanger: true,
-                                pageSizeOptions: ["10", "20", "50"],
-                                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} campaigns`,
-                                style: { padding: "12px 16px" },
-                            }}
-                            expandable={{
-                                expandedRowRender: (record: Campaign) => {
-                                    if (!record.line_items || record.line_items.length === 0) {
-                                        return <span style={{ color: C.slate500, fontSize: 12 }}>No line items for this campaign.</span>;
-                                    }
-                                    return (
-                                        <div style={{ padding: "8px 0" }}>
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: C.slate, marginBottom: 8, display: "block" }}>
-                                                Line Items ({record.line_items.length})
-                                            </span>
-                                            <Table
-                                                size="small"
-                                                dataSource={record.line_items}
-                                                rowKey="line_item_id"
-                                                pagination={false}
-                                                columns={lineItemColumns}
-                                                scroll={{ x: 1200 }}
-                                                style={{ background: "#F8FAFC", borderRadius: 8 }}
-                                            />
-                                        </div>
-                                    );
-                                },
-                                rowExpandable: () => true,
-                            }}
-                            rowClassName={(record) =>
-                                isClosedCampaign(record)
-                                    ? "campaign-dashboard-row campaign-dashboard-row-closed"
-                                    : "campaign-dashboard-row"
+            {/* Filters */}
+            <div style={{
+                background: C.white, borderRadius: 12, padding: "14px 18px",
+                border: `1px solid ${C.border}`, marginBottom: 16,
+                display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+            }}>
+                <Input
+                    placeholder="Search by name, ID, advertiser, company…"
+                    prefix={<SearchOutlined style={{ color: C.slate500 }} />}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    allowClear
+                    style={{ flex: 1, minWidth: 240, height: 36 }}
+                />
+                <Select value={typeFilter} onChange={setTypeFilter} style={{ width: 180, height: 36 }}>
+                    <Option value="all">All Types</Option>
+                    {uniqueTypes.map((t) => <Option key={t} value={t}>{t}</Option>)}
+                </Select>
+                <Button
+                    onClick={fetchCampaigns}
+                    icon={<ReloadOutlined />}
+                    style={{ height: 36, borderRadius: 8, border: `1px solid ${C.border}`, background: C.white, color: C.slate500, fontSize: 12, fontWeight: 600 }}
+                >
+                    Refresh
+                </Button>
+                <span style={{ fontSize: 12, color: C.slate500, marginLeft: "auto" }}>
+                    {filtered.length} of {campaigns.length} campaigns
+                </span>
+            </div>
+
+            {/* Table */}
+            <div style={{
+                background: C.white, borderRadius: 14, border: `1px solid ${C.border}`,
+                overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}>
+                <Table
+                    columns={columns}
+                    dataSource={filtered}
+                    rowKey="campaign_id"
+                    loading={loading}
+                    scroll={{ x: 2200 }}
+                    pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        pageSizeOptions: ["10", "20", "50"],
+                        showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} campaigns`,
+                        style: { padding: "12px 16px" },
+                    }}
+                    expandable={{
+                        expandedRowRender: (record: Campaign) => {
+                            if (!record.line_items || record.line_items.length === 0) {
+                                return <span style={{ color: C.slate500, fontSize: 12 }}>No line items for this campaign.</span>;
                             }
-                            style={{ fontSize: 13 }}
-                        />
-                    </div>
-                </main>
+                            return (
+                                <div style={{ padding: "8px 0" }}>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: C.slate, marginBottom: 8, display: "block" }}>
+                                        Line Items ({record.line_items.length})
+                                    </span>
+                                    <Table
+                                        size="small"
+                                        dataSource={record.line_items}
+                                        rowKey="line_item_id"
+                                        pagination={false}
+                                        columns={lineItemColumns}
+                                        scroll={{ x: 1200 }}
+                                        style={{ background: "#F8FAFC", borderRadius: 8 }}
+                                    />
+                                </div>
+                            );
+                        },
+                        rowExpandable: () => true,
+                    }}
+                    rowClassName={(record) =>
+                        isClosedCampaign(record)
+                            ? "campaign-dashboard-row campaign-dashboard-row-closed"
+                            : "campaign-dashboard-row"
+                    }
+                    style={{ fontSize: 13 }}
+                />
             </div>
 
             {/* Toast */}
@@ -891,6 +857,6 @@ export default function Campaign_Dashboard() {
                 }
                 .ant-table-row-expand-icon-cell { background: #F1F5F9; }
             `}</style>
-        </div>
+        </>
     );
 }

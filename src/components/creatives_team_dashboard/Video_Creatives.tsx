@@ -6,7 +6,6 @@ import {
   DownloadOutlined, CloseOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import CreativeSidebar from '../creatives_team_dashboard/CreativeSidebar'; // ← updated import
 
 const { Text } = Typography;
 
@@ -19,7 +18,6 @@ const SLATE = '#0F172A';
 const SLATE_300 = '#CBD5E1';
 const SLATE_500 = '#64748B';
 const WHITE = '#FFFFFF';
-const BG = '#F8FAFC';
 const GREEN = '#059669';
 const GREEN_LIGHT = '#f0fdf4';
 const GREEN_BORDER = '#86efac';
@@ -307,16 +305,10 @@ function colHead(): React.CSSProperties {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function Video_Creatives() {
-  const [collapsed, setCollapsed] = useState(false);
-  const sideWidth = collapsed ? 64 : 240;
-
   const [rows, setRows] = useState<VideoCreativeRow[]>([]);
   const [filtered, setFiltered] = useState<VideoCreativeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-
-  const clientName = localStorage.getItem('client_name') ?? '';
-  const avatarInitials = clientName ? clientName.charAt(0).toUpperCase() : 'U';
 
   // ── Preview state ──────────────────────────────────────────────────────────
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -355,7 +347,7 @@ export default function Video_Creatives() {
             if (!hasVideoFormat) return;
 
             (li.creatives ?? []).forEach((cr, idx) => {
-                            const assetUrl = cr.main_asset_url || cr.main_asset || '';
+              const assetUrl = cr.main_asset_url || cr.main_asset || '';
               if (isImage(assetUrl)) return;
               flat.push({
                 key: `${campaign.campaign_id}_${li.line_item_id}_${idx}`,
@@ -618,128 +610,116 @@ export default function Video_Creatives() {
   const previewExt = getExt(previewUrl) || 'file';
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: BG, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-      <CreativeSidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
+    <>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+      }}>
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: SLATE, }}>Video Creatives</h1>
+          <p style={{ fontSize: 11, color: SLATE_500, marginTop: 1, letterSpacing: "0.04em", fontWeight: 500, }}>ALL VIDEO CREATIVES ACROSS CAMPAIGNS</p>
+        </div>
 
-      <div style={{ marginLeft: sideWidth, flex: 1, display: 'flex', flexDirection: 'column', transition: 'margin-left 0.25s', minWidth: 0 }}>
-
-        {/* Header */}
-        <header style={{
-          background: WHITE, borderBottom: `1px solid ${SLATE_300}`,
-          padding: '0 28px', height: 64,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 50,
-        }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: SLATE }}>Video Creatives</div>
-            <div style={{ fontSize: 11, color: SLATE_500, letterSpacing: '0.04em' }}>ALL VIDEO CREATIVES ACROSS CAMPAIGNS</div>
-          </div>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%', background: BLUE,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: WHITE, fontSize: 13, fontWeight: 700,
-          }}>{avatarInitials}</div>
-        </header>
-
-        <main style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
-            {[
-              { label: 'Total Video Creatives', value: rows.length, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
-              { label: 'With Asset', value: withAsset, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
-              { label: 'Valid Click URLs', value: withClickUrl, color: GREEN, bg: GREEN_LIGHT, border: GREEN_BORDER },
-              { label: 'Valid HTML Tags', value: withTag, color: '#d97706', bg: '#fffbeb', border: '#fcd34d' },
-            ].map(s => (
-              <div key={s.label} style={{
-                background: WHITE, border: `1px solid ${SLATE_300}`,
-                borderRadius: 12, padding: '16px 20px',
-                display: 'flex', alignItems: 'center', gap: 14,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10,
-                  background: s.bg, border: `1px solid ${s.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, fontWeight: 800, color: s.color,
-                }}>{s.value}</div>
-                <div style={{ fontSize: 12.5, color: SLATE_500, fontWeight: 500 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Filters */}
-          <div style={{
-            background: WHITE, borderRadius: 12, padding: '14px 20px',
-            border: `1px solid ${SLATE_300}`, marginBottom: 16,
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <Input
-              placeholder="Search by creative name, campaign, line item…"
-              prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ flex: 1, minWidth: 240, height: 36 }}
-              allowClear
-            />
-            <Button icon={<ReloadOutlined />} onClick={fetchData}
-              style={{ height: 36, color: SLATE_500, border: `1px solid ${SLATE_300}` }}>
-              Refresh
-            </Button>
-            <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
-              {filtered.length} of {rows.length} creatives
-            </Text>
-          </div>
-
-          {/* Legend */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, fontSize: 11.5, color: SLATE_500 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a' }} />
-              Valid tracker detected
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444' }} />
-              Invalid / missing tracker
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <CopyOutlined style={{ fontSize: 11, color: SLATE_500 }} />
-              <span>Click copy icon to copy URL / tag</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 8 }}>
-              <PlayCircleOutlined style={{ fontSize: 11, color: BLUE }} />
-              <span>Click creative name to preview</span>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div style={{
-            background: WHITE, borderRadius: 12,
-            border: `1px solid ${SLATE_300}`,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden',
-          }}>
-            <Table
-              columns={columns}
-              dataSource={filtered}
-              rowKey="key"
-              loading={loading}
-              scroll={{ x: 1900 }}
-              pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t, r) => `${r[0]}–${r[1]} of ${t}` }}
-              locale={{
-                emptyText: (
-                  <div style={{ padding: '48px 0', textAlign: 'center', color: SLATE_500 }}>
-                    <VideoCameraOutlined style={{ fontSize: 36, marginBottom: 12, color: SLATE_300 }} />
-                    <div style={{ fontSize: 14, fontWeight: 600, color: SLATE }}>No video creatives found</div>
-                    <div style={{ fontSize: 12, marginTop: 4 }}>
-                      Upload video creatives from the Campaign → Line Item → Creatives section.
-                    </div>
-                  </div>
-                ),
-              }}
-              style={{ fontSize: 13 }}
-            />
-          </div>
-        </main>
       </div>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
+        {[
+          { label: 'Total Video Creatives', value: rows.length, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
+          { label: 'With Asset', value: withAsset, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
+          { label: 'Valid Click URLs', value: withClickUrl, color: GREEN, bg: GREEN_LIGHT, border: GREEN_BORDER },
+          { label: 'Valid HTML Tags', value: withTag, color: '#d97706', bg: '#fffbeb', border: '#fcd34d' },
+        ].map(s => (
+          <div key={s.label} style={{
+            background: WHITE, border: `1px solid ${SLATE_300}`,
+            borderRadius: 12, padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 10,
+              background: s.bg, border: `1px solid ${s.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, fontWeight: 800, color: s.color,
+            }}>{s.value}</div>
+            <div style={{ fontSize: 12.5, color: SLATE_500, fontWeight: 500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div style={{
+        background: WHITE, borderRadius: 12, padding: '14px 20px',
+        border: `1px solid ${SLATE_300}`, marginBottom: 16,
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <Input
+          placeholder="Search by creative name, campaign, line item…"
+          prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, minWidth: 240, height: 36 }}
+          allowClear
+        />
+        <Button icon={<ReloadOutlined />} onClick={fetchData}
+          style={{ height: 36, color: SLATE_500, border: `1px solid ${SLATE_300}` }}>
+          Refresh
+        </Button>
+        <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
+          {filtered.length} of {rows.length} creatives
+        </Text>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, fontSize: 11.5, color: SLATE_500 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a' }} />
+          Valid tracker detected
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444' }} />
+          Invalid / missing tracker
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <CopyOutlined style={{ fontSize: 11, color: SLATE_500 }} />
+          <span>Click copy icon to copy URL / tag</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 8 }}>
+          <PlayCircleOutlined style={{ fontSize: 11, color: BLUE }} />
+          <span>Click creative name to preview</span>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{
+        background: WHITE, borderRadius: 12,
+        border: `1px solid ${SLATE_300}`,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden',
+      }}>
+        <Table
+          columns={columns}
+          dataSource={filtered}
+          rowKey="key"
+          loading={loading}
+          scroll={{ x: 1900 }}
+          pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t, r) => `${r[0]}–${r[1]} of ${t}` }}
+          locale={{
+            emptyText: (
+              <div style={{ padding: '48px 0', textAlign: 'center', color: SLATE_500 }}>
+                <VideoCameraOutlined style={{ fontSize: 36, marginBottom: 12, color: SLATE_300 }} />
+                <div style={{ fontSize: 14, fontWeight: 600, color: SLATE }}>No video creatives found</div>
+                <div style={{ fontSize: 12, marginTop: 4 }}>
+                  Upload video creatives from the Campaign → Line Item → Creatives section.
+                </div>
+              </div>
+            ),
+          }}
+          style={{ fontSize: 13 }}
+        />
+      </div>
+
 
       {/* Preview Modal — rendered outside table, uses derived safe props */}
       {previewOpen && previewUrl && (
@@ -760,6 +740,7 @@ export default function Video_Creatives() {
         }
         .ant-table-tbody > tr:hover > td { background: #fafbff !important; }
       `}</style>
-    </div>
+
+    </>
   );
 }

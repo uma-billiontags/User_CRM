@@ -5,33 +5,33 @@ import {
 } from 'lucide-react';
 import { DollarOutlined } from '@ant-design/icons/es/icons/index';
 
-const BLUE  = '#2563EB';
+const BLUE = '#2563EB';
 const WHITE = '#FFFFFF';
 
 const CAMPAIGN_NAV = [
   {
     g: 'WORKSPACE',
     items: [
-      { label: 'Dashboard',        icon: LayoutDashboard, to: '/user_dashboard'   },
-      { label: 'My Campaigns',     icon: Megaphone,       to: '/user_campaigns'   },
-      { label: 'Create Campaign',  icon: Plus,            to: '/campaign_create'  },
-      { label: 'My Drafts',        icon: Layers,          to: '/user_drafts'      },
-      { label: 'Insertion Orders', icon: FileText,        to: '/user_io'          },
+      { label: 'Dashboard', icon: LayoutDashboard, to: '/user_dashboard' },
+      { label: 'My Campaigns', icon: Megaphone, to: '/user_campaigns' },
+      { label: 'Create Campaign', icon: Plus, to: '/campaign_create' },
+      { label: 'My Drafts', icon: Layers, to: '/user_drafts' },
+      { label: 'Insertion Orders', icon: FileText, to: '/user_io' },
       { label: 'Invoices', icon: DollarOutlined, to: '/user_invoices' },
     ],
   },
   {
     g: 'MONITOR',
     items: [
-      { label: 'Live Status', icon: Radio,    to: '/user_live'      },
-      { label: 'Approvals',   icon: FileText, to: '/user_approvals' },
+      { label: 'Live Status', icon: Radio, to: '/user_live' },
+      { label: 'Approvals', icon: FileText, to: '/user_approvals' },
     ],
   },
   {
     g: 'INSIGHTS',
     items: [
-      { label: 'Reports', icon: FileText, to: '/user_reports'  },
-      { label: 'Billing', icon: Wallet,   to: '/user_billing'  },
+      { label: 'Reports', icon: FileText, to: '/user_reports' },
+      { label: 'Billing', icon: Wallet, to: '/user_billing' },
     ],
   },
 ];
@@ -42,11 +42,11 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const location   = useLocation();
+  const location = useLocation();
   const clientName = localStorage.getItem('client_name') ?? '';
 
   const avatarInitials = clientName ? clientName.charAt(0).toUpperCase() : 'A';
-  const displayName    = clientName || 'User';
+  const displayName = clientName || 'User';
 
   return (
     <aside style={{
@@ -75,7 +75,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             }}>{avatarInitials}</div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: WHITE, letterSpacing: '-0.3px' }}>
-                {displayName} 
+                {displayName}
               </div>
               <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.1em' }}>
                 CAMPAIGN PLATFORM

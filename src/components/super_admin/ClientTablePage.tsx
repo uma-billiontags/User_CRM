@@ -3,9 +3,10 @@ import { C, fmt } from "../types/types";
 import { StatusBadge, ClientDetailModal } from "./SharedComponents";
 import type { Client, ClientStatus } from "../types/types";
 import { Button, Input, Modal, Table } from "antd";
-import { CheckCircleOutlined, MessageOutlined, SearchOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, MessageOutlined, SearchOutlined, PlusOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import Chat from "../admin/Chat"; // ← Chat component
+import { useNavigate } from "react-router-dom";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -43,6 +44,8 @@ export default function ClientTablePage({
       return new Set();
     }
   });
+
+  const navigate = useNavigate();
 
   // Close modals on Escape
   useEffect(() => {
@@ -370,6 +373,17 @@ export default function ClientTablePage({
             background: C.white, border: `1px solid ${C.border}`,
             borderRadius: 9, color: C.slate, fontSize: 13, outline: "none",
           }} />
+        <Button
+          onClick={() => navigate('/onboarding')}
+          style={{
+            borderRadius: 9, border: "none",
+            background: C.blue, color: "#fff",
+            fontSize: 13, fontWeight: 700,
+            boxShadow: `0 4px 14px ${C.green}44`,
+          }}
+        >
+          <PlusOutlined /> Add New Client
+        </Button>
         <span
           style={{ fontSize: 12, color: C.slate500, marginLeft: "auto" }}
         >

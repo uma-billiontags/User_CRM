@@ -1,15 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Modal, Spin, Tag, Input, Empty } from "antd";
 import {
     EyeOutlined,
     DownloadOutlined,
     SearchOutlined,
-    FileTextOutlined,
     ReloadOutlined,
     CheckCircleOutlined,
     DollarOutlined,
 } from "@ant-design/icons";
-import Sidebar from "../shared/Sidebar";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -663,9 +661,6 @@ function InvoicePreviewModal({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function User_Invoice() {
-    const [collapsed, setCollapsed] = useState(false);
-    const sideWidth = collapsed ? 64 : 240;
-
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -678,7 +673,6 @@ export default function User_Invoice() {
     const [invoiceMap, setInvoiceMap] = useState<Record<string, string>>({});
 
     const clientId = localStorage.getItem("client_id");
-    const clientName = localStorage.getItem("client_name") ?? "";
 
     // Fetch invoices from backend (only campaigns whose end date has passed)
     const fetchInvoices = () => {
@@ -864,83 +858,57 @@ export default function User_Invoice() {
     }).length;
 
     return (
-        <div
-            style={{
-                display: "flex",
-                minHeight: "100vh",
-                background: C.bg,
-                fontFamily: "'Segoe UI', system-ui, sans-serif",
-            }}
-        >
-            <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+        <>
 
             <div
                 style={{
-                    marginLeft: sideWidth,
-                    flex: 1,
                     display: "flex",
-                    flexDirection: "column",
-                    transition: "margin-left 0.25s cubic-bezier(.4,0,.2,1)",
-                    minWidth: 0,
+                    minHeight: "100vh",
+                    background: C.bg,
+                    fontFamily: "'Segoe UI', system-ui, sans-serif",
                 }}
             >
-                {/* ── Topbar ── */}
-                <header
-                    style={{
-                        background: C.white,
-                        borderBottom: `1px solid ${C.slate300}`,
-                        padding: "0 28px",
-                        height: 64,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 50,
-                    }}
+
+                <div
+
                 >
-                    <div>
-                        <h1
-                            style={{
-                                fontSize: 18,
-                                fontWeight: 700,
-                                color: C.slate,
-                                letterSpacing: "-0.4px",
-                            }}
-                        >
-                            Invoices
-                        </h1>
-                        <p
-                            style={{
-                                fontSize: 11,
-                                color: C.slate500,
-                                marginTop: 1,
-                                letterSpacing: "0.04em",
-                                fontWeight: 500,
-                            }}
-                        >
-                            VIEW & DOWNLOAD TAX INVOICES FOR YOUR CAMPAIGNS
-                        </p>
-                    </div>
+                    {/* ── Topbar ── */}
                     <div
                         style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: "50%",
-                            background: C.blue,
+                            height: 64,
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
-                            color: C.white,
-                            fontSize: 12,
-                            fontWeight: 800,
+                            justifyContent: "space-between",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 50,
                         }}
                     >
-                        {clientName ? clientName.charAt(0).toUpperCase() : "U"}
+                        <div>
+                            <h1
+                                style={{
+                                    fontSize: 18,
+                                    fontWeight: 700,
+                                    color: C.slate,
+                                    letterSpacing: "-0.4px",
+                                }}
+                            >
+                                Invoices
+                            </h1>
+                            <p
+                                style={{
+                                    fontSize: 11,
+                                    color: C.slate500,
+                                    marginTop: 1,
+                                    letterSpacing: "0.04em",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                VIEW & DOWNLOAD TAX INVOICES FOR YOUR CAMPAIGNS
+                            </p>
+                        </div>
                     </div>
-                </header>
 
-                <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
 
                     {/* ── Info Banner ── */}
                     <div
@@ -1391,27 +1359,27 @@ export default function User_Invoice() {
                             Loading client details for Invoice…
                         </div>
                     )}
-                </main>
-            </div>
+                </div>
 
-            {/* Invoice Preview Modal */}
-            <InvoicePreviewModal
-                open={!!previewCampaign}
-                campaign={previewCampaign}
-                client={previewClient}
-                onClose={() => {
-                    setPreviewCampaign(null);
-                    setPreviewClient(null);
-                }}
-                onDownload={handleDownload}
-                downloading={downloading}
-            />
+                {/* Invoice Preview Modal */}
+                <InvoicePreviewModal
+                    open={!!previewCampaign}
+                    campaign={previewCampaign}
+                    client={previewClient}
+                    onClose={() => {
+                        setPreviewCampaign(null);
+                        setPreviewClient(null);
+                    }}
+                    onDownload={handleDownload}
+                    downloading={downloading}
+                />
 
-            <style>{`
+                <style>{`
         .ant-table-thead > tr > th {
           background: #F1F5F9 !important;
         }
       `}</style>
-        </div>
+            </div>
+        </>
     );
 }

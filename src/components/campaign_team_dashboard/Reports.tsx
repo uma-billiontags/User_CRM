@@ -5,42 +5,41 @@ import {
     FileExcelOutlined, DownloadOutlined, CheckCircleOutlined, ClockCircleOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import CampaignSidebar from "./CampaignSidebar";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const C = {
-    bg:          "#F8FAFC",
-    white:       "#FFFFFF",
-    slate:       "#0F172A",
-    slate500:    "#64748B",
-    slate300:    "#CBD5E1",
-    border:      "#E2E8F0",
-    blue:        "#2563EB",
-    blueLight:   "#EFF6FF",
-    blueMid:     "#BFDBFE",
-    green:       "#16A34A",
-    greenLight:  "#F0FDF4",
-    greenMid:    "#86EFAC",
-    amber:       "#D97706",
-    amberLight:  "#FFFBEB",
-    purple:      "#7C3AED",
+    bg: "#F8FAFC",
+    white: "#FFFFFF",
+    slate: "#0F172A",
+    slate500: "#64748B",
+    slate300: "#CBD5E1",
+    border: "#E2E8F0",
+    blue: "#2563EB",
+    blueLight: "#EFF6FF",
+    blueMid: "#BFDBFE",
+    green: "#16A34A",
+    greenLight: "#F0FDF4",
+    greenMid: "#86EFAC",
+    amber: "#D97706",
+    amberLight: "#FFFBEB",
+    purple: "#7C3AED",
     purpleLight: "#F5F3FF",
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface CampaignRow {
-    campaign_id:      string;
-    campaign_name:    string;
-    client_name:      string;
-    client_id:        string;
-    start_date:       string;
-    end_date:         string;
+    campaign_id: string;
+    campaign_name: string;
+    client_name: string;
+    client_id: string;
+    start_date: string;
+    end_date: string;
     line_items_count: number;
-    excel_generated:  boolean;
-    excel_url:        string | null;
-    generated_at:     string | null;
+    excel_generated: boolean;
+    excel_url: string | null;
+    generated_at: string | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -68,17 +67,11 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Reports() {
-    const [collapsed, setCollapsed]       = useState(false);
-    const sideWidth = collapsed ? 64 : 240;
-
-    const [campaigns, setCampaigns]       = useState<CampaignRow[]>([]);
-    const [loading, setLoading]           = useState(true);
-    const [search, setSearch]             = useState("");
-    const [generating, setGenerating]     = useState<string | null>(null); // campaign_id being generated
-    const [toast, setToast]               = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-    const clientName     = localStorage.getItem("client_name") ?? "";
-    const avatarInitials = clientName ? clientName.charAt(0).toUpperCase() : "U";
+    const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [generating, setGenerating] = useState<string | null>(null); // campaign_id being generated
+    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
     const showToast = (message: string, type: "success" | "error" = "success") =>
         setToast({ message, type });
@@ -140,9 +133,9 @@ export default function Reports() {
     });
 
     // ── Stats ───────────────────────────────────────────────────────────────
-    const totalCount     = campaigns.length;
+    const totalCount = campaigns.length;
     const generatedCount = campaigns.filter(c => c.excel_generated).length;
-    const pendingCount   = totalCount - generatedCount;
+    const pendingCount = totalCount - generatedCount;
 
     // ── Columns ─────────────────────────────────────────────────────────────
     const columns: ColumnsType<CampaignRow> = [
@@ -278,126 +271,102 @@ export default function Reports() {
     ];
 
     return (
-        <div style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-            <CampaignSidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
+        <>
+            <div style={{ marginBottom: 20 }}>
+                <h1
+                    style={{ fontSize: 18, fontWeight: 700, color: C.slate, }}>
+                    Reports
+                </h1>
+                <p
+                    style={{ fontSize: 11, color: C.slate500, marginTop: 1, letterSpacing: "0.04em", fontWeight: 500, }}
+                >
+                    GENERATE &amp; DOWNLOAD CAMPAIGN EXCEL REPORTS
+                </p>
+            </div>
 
-            <div style={{ marginLeft: sideWidth, flex: 1, display: "flex", flexDirection: "column", transition: "margin-left 0.25s", minWidth: 0 }}>
-
-                {/* Header */}
-                <header style={{
-                    background: C.white, borderBottom: `1px solid ${C.slate300}`,
-                    padding: "0 28px", height: 64,
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    position: "sticky", top: 0, zIndex: 50,
-                }}>
-                    <div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: C.slate }}>Reports</div>
-                        <div style={{ fontSize: 11, color: C.slate500, letterSpacing: "0.04em" }}>GENERATE &amp; DOWNLOAD CAMPAIGN EXCEL REPORTS</div>
-                    </div>
-                    <div style={{
-                        width: 36, height: 36, borderRadius: "50%", background: C.blue,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: C.white, fontSize: 12, fontWeight: 800,
+            {/* Stat Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
+                {[
+                    { label: "Total Campaigns", value: totalCount, color: C.blue, bg: C.blueLight, icon: "📊" },
+                    { label: "Excel Generated", value: generatedCount, color: C.green, bg: C.greenLight, icon: "✅" },
+                    { label: "Pending", value: pendingCount, color: C.amber, bg: C.amberLight, icon: "⏳" },
+                ].map(card => (
+                    <div key={card.label} style={{
+                        background: C.white, borderRadius: 14, padding: 20,
+                        border: `1px solid ${C.border}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                     }}>
-                        {avatarInitials}
-                    </div>
-                </header>
-
-                <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-
-                    {/* Page title */}
-                    <div style={{ marginBottom: 20 }}>
-                        <h1 style={{ fontSize: 20, fontWeight: 700, color: C.slate, margin: 0 }}>Campaign Reports</h1>
-                        <p style={{ fontSize: 11, color: C.slate500, margin: "4px 0 0", letterSpacing: "0.04em" }}>
-                            GENERATE EXCEL FILES — ONE SHEET PER LINE ITEM
-                        </p>
-                    </div>
-
-                    {/* Stat Cards */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
-                        {[
-                            { label: "Total Campaigns", value: totalCount,     color: C.blue,   bg: C.blueLight,   icon: "📊" },
-                            { label: "Excel Generated", value: generatedCount, color: C.green,  bg: C.greenLight,  icon: "✅" },
-                            { label: "Pending",         value: pendingCount,   color: C.amber,  bg: C.amberLight,  icon: "⏳" },
-                        ].map(card => (
-                            <div key={card.label} style={{
-                                background: C.white, borderRadius: 14, padding: 20,
-                                border: `1px solid ${C.border}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                            }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                                    <span style={{ fontSize: 11, color: card.color, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                                        {card.label}
-                                    </span>
-                                    <div style={{ width: 36, height: 36, borderRadius: 9, background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
-                                        {card.icon}
-                                    </div>
-                                </div>
-                                <div style={{ fontSize: 32, fontWeight: 800, color: card.color, letterSpacing: "-1px", lineHeight: 1 }}>
-                                    {card.value}
-                                </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                            <span style={{ fontSize: 11, color: card.color, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                                {card.label}
+                            </span>
+                            <div style={{ width: 36, height: 36, borderRadius: 9, background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                                {card.icon}
                             </div>
-                        ))}
+                        </div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: card.color, letterSpacing: "-1px", lineHeight: 1 }}>
+                            {card.value}
+                        </div>
                     </div>
+                ))}
+            </div>
 
-                    {/* Filters */}
-                    <div style={{
-                        background: C.white, borderRadius: 12, padding: "14px 18px",
-                        border: `1px solid ${C.border}`, marginBottom: 16,
-                        display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
-                    }}>
-                        <Input
-                            placeholder="Search by campaign ID, name, client…"
-                            prefix={<SearchOutlined style={{ color: C.slate500 }} />}
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            allowClear
-                            style={{ flex: 1, minWidth: 240, height: 36 }}
-                        />
-                        <Button
-                            onClick={fetchList}
-                            icon={<ReloadOutlined />}
-                            style={{ height: 36, borderRadius: 8, border: `1px solid ${C.border}`, background: C.white, color: C.slate500, fontSize: 12, fontWeight: 600 }}
-                        >
-                            Refresh
-                        </Button>
-                        <span style={{ fontSize: 12, color: C.slate500, marginLeft: "auto" }}>
-                            {filtered.length} of {campaigns.length} campaigns
-                        </span>
-                    </div>
+            {/* Filters */}
+            <div style={{
+                background: C.white, borderRadius: 12, padding: "14px 18px",
+                border: `1px solid ${C.border}`, marginBottom: 16,
+                display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+            }}>
+                <Input
+                    placeholder="Search by campaign ID, name, client…"
+                    prefix={<SearchOutlined style={{ color: C.slate500 }} />}
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    allowClear
+                    style={{ flex: 1, minWidth: 240, height: 36 }}
+                />
+                <Button
+                    onClick={fetchList}
+                    icon={<ReloadOutlined />}
+                    style={{ height: 36, borderRadius: 8, border: `1px solid ${C.border}`, background: C.white, color: C.slate500, fontSize: 12, fontWeight: 600 }}
+                >
+                    Refresh
+                </Button>
+                <span style={{ fontSize: 12, color: C.slate500, marginLeft: "auto" }}>
+                    {filtered.length} of {campaigns.length} campaigns
+                </span>
+            </div>
 
-                    {/* Info Banner */}
-                    <div style={{
-                        background: C.blueLight, border: `1px solid ${C.blueMid}`,
-                        borderRadius: 10, padding: "10px 16px", marginBottom: 16,
-                        display: "flex", alignItems: "center", gap: 10,
-                        fontSize: 12.5, color: C.blue, fontWeight: 500,
-                    }}>
-                        <FileExcelOutlined style={{ fontSize: 16 }} />
-                        Each Excel file contains one sheet per Line Item. Click <strong>Generate</strong> to create the Excel, then <strong>Download</strong> to save it.
-                    </div>
+            {/* Info Banner */}
+            <div style={{
+                background: C.blueLight, border: `1px solid ${C.blueMid}`,
+                borderRadius: 10, padding: "10px 16px", marginBottom: 16,
+                display: "flex", alignItems: "center", gap: 10,
+                fontSize: 12.5, color: C.blue, fontWeight: 500,
+            }}>
+                <FileExcelOutlined style={{ fontSize: 16 }} />
+                Each Excel file contains one sheet per Line Item. Click <strong>Generate</strong> to create the Excel, then <strong>Download</strong> to save it.
+            </div>
 
-                    {/* Table */}
-                    <div style={{
-                        background: C.white, borderRadius: 14, border: `1px solid ${C.border}`,
-                        overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                    }}>
-                        <Table
-                            columns={columns}
-                            dataSource={filtered}
-                            rowKey="campaign_id"
-                            loading={loading}
-                            scroll={{ x: 1200 }}
-                            pagination={{
-                                pageSize: 10,
-                                showSizeChanger: true,
-                                pageSizeOptions: ["10", "20", "50"],
-                                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} campaigns`,
-                                style: { padding: "12px 16px" },
-                            }}
-                            style={{ fontSize: 13 }}
-                        />
-                    </div>
-                </main>
+            {/* Table */}
+            <div style={{
+                background: C.white, borderRadius: 14, border: `1px solid ${C.border}`,
+                overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}>
+                <Table
+                    columns={columns}
+                    dataSource={filtered}
+                    rowKey="campaign_id"
+                    loading={loading}
+                    scroll={{ x: 1200 }}
+                    pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        pageSizeOptions: ["10", "20", "50"],
+                        showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} campaigns`,
+                        style: { padding: "12px 16px" },
+                    }}
+                    style={{ fontSize: 13 }}
+                />
             </div>
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -413,6 +382,6 @@ export default function Reports() {
                 }
                 .ant-table-row:hover td { background: #F8FAFC !important; }
             `}</style>
-        </div>
+        </>
     );
 }

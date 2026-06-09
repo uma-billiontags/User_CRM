@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Form, Input, Select, Button, DatePicker, Divider, message
 } from 'antd';
 import {
   ArrowRightOutlined, CheckOutlined,
-  PlusOutlined, RightOutlined,
+  PlusOutlined,
   CloseOutlined, InfoCircleOutlined,
   EnvironmentOutlined, DeleteOutlined, FileImageOutlined, VideoCameraOutlined,
   SaveOutlined
@@ -13,7 +13,6 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import '../styles/Campaign_Create.css';
-import Sidebar from '../shared/Sidebar';
 import type { LineItem, GeoLocation, LineItemCardProps, CreativeData } from '../types/campaign.form.types';
 
 dayjs.extend(isBetween);
@@ -518,45 +517,125 @@ function InfoBox({ variant = 'blue', children }: { variant?: 'blue' | 'amber'; c
 }
 
 // ── Step 1 ──
-function Step1({ setClient, setClientId, advertiser, setAdvertiser, websiteUrl, setWebsiteUrl, setClientCountry, setClientCurrencySymbol }: any) {
+function Step1({ setClient, setClientId, advertiser, setAdvertiser, websiteUrl, setWebsiteUrl, setClientCountry, setClientCurrencySymbol, superadminMode }: any) {
   const [clientName, setClientName] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // ── Admin mode: fetch all clients for dropdown ──
+  const [allClients, setAllClients] = useState<{ client_id: string; name: string; country?: string }[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
+
   useEffect(() => {
-    const clientId = localStorage.getItem('client_id');
-    if (!clientId) { setClientName('No client linked'); setLoading(false); return; }
-    fetch(`${BASE_URL}/get_client/${clientId}/`, {
-      headers: { 'Accept': 'application/json', 'ngrok-skip-browser-warning': '1' },
-    })
-      .then(res => res.json())
-      .then(async (data) => {
-        setClientName(data.name || '');
-        setClient(data.name || '');
-        setClientId(data.client_id || '');
-        localStorage.setItem('client_name', data.name || '');
-        const country = data.country || '';
-        setClientCountry(country);
-        if (country) {
-          try {
-            const r = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(country)}?fields=currencies`);
-            if (!r.ok) throw new Error('Failed to fetch');
-            const countryData = await r.json();
-            const currencies = countryData?.[0]?.currencies ?? {};
-            const firstCurrency = Object.values(currencies)[0] as { name: string; symbol: string } | undefined;
-            setClientCurrencySymbol(firstCurrency?.symbol ?? '$');
-          } catch { setClientCurrencySymbol('$'); }
-        }
+    if (superadminMode) {
+      // Fetch all approved clients for dropdown
+      fetch(`${BASE_URL}/get_all_clients/`, {
+        headers: { 'Accept': 'application/json', 'ngrok-skip-browser-warning': '1' },
       })
-      .catch(() => setClientName('Failed to load'))
-      .finally(() => setLoading(false));
-  }, []);
+        .then(res => res.json())
+        .then((data: any[]) => {
+          const approved = data.filter(c => c.status === 'approved');
+          setAllClients(approved.map(c => ({ client_id: c.client_id, name: c.name, country: c.country })));
+        })
+        .catch(() => { })
+        .finally(() => setLoading(false));
+    } else {
+      // Normal client mode — use localStorage
+      const clientId = localStorage.getItem('client_id');
+      if (!clientId) { setClientName('No client linked'); setLoading(false); return; }
+      fetch(`${BASE_URL}/get_client/${clientId}/`, {
+        headers: { 'Accept': 'application/json', 'ngrok-skip-browser-warning': '1' },
+      })
+        .then(res => res.json())
+        .then(async (data) => {
+          setClientName(data.name || '');
+          setClient(data.name || '');
+          setClientId(data.client_id || '');
+          localStorage.setItem('client_name', data.name || '');
+          const country = data.country || '';
+          setClientCountry(country);
+          if (country) {
+            try {
+              const r = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(country)}?fields=currencies`);
+              if (!r.ok) throw new Error('Failed to fetch');
+              const countryData = await r.json();
+              const currencies = countryData?.[0]?.currencies ?? {};
+              const firstCurrency = Object.values(currencies)[0] as { name: string; symbol: string } | undefined;
+              setClientCurrencySymbol(firstCurrency?.symbol ?? '$');
+            } catch { setClientCurrencySymbol('$'); }
+          }
+        })
+        .catch(() => setClientName('Failed to load'))
+        .finally(() => setLoading(false));
+    }
+  }, [superadminMode]);
+
+  // When admin selects a client from dropdown
+  const handleAdminClientSelect = async (clientId: string) => {
+    setSelectedClientId(clientId);
+    const found = allClients.find(c => c.client_id === clientId);
+    if (!found) return;
+    setClient(found.name);
+    setClientId(found.client_id);
+    setClientCountry(found.country || '');
+    if (found.country) {
+      try {
+        const r = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(found.country)}?fields=currencies`);
+        const countryData = await r.json();
+        const currencies = countryData?.[0]?.currencies ?? {};
+        const firstCurrency = Object.values(currencies)[0] as { name: string; symbol: string } | undefined;
+        setClientCurrencySymbol(firstCurrency?.symbol ?? '$');
+      } catch { setClientCurrencySymbol('$'); }
+    }
+  };
 
   return (
     <div className="cc-form-section-sm">
       <Form layout="vertical" className="cc-form">
-        <Form.Item label="Company Name" required>
-          <Input className="cc-company-name-input" value={loading ? 'Loading…' : clientName} disabled style={{ fontWeight: 600 }} />
-        </Form.Item>
+
+        {superadminMode ? (
+          // ── Admin: show client dropdown ──
+          <Form.Item label="Select Client" required>
+            {loading ? (
+              <Input disabled value="Loading clients…" />
+            ) : (
+              <Select
+                showSearch
+                placeholder="Select a client…"
+                style={{ width: '100%', height: 38 }}
+                value={selectedClientId || undefined}
+                onChange={handleAdminClientSelect}
+                filterOption={(input, option) =>
+                  (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+                options={allClients.map(c => ({
+                  value: c.client_id,
+                  label: `${c.name} (${c.client_id})`,
+                }))}
+              />
+            )}
+            {selectedClientId && (
+              <div style={{
+                marginTop: 8, padding: '6px 12px', background: '#f0fdf4',
+                border: '1px solid #86efac', borderRadius: 8,
+                fontSize: 12, color: '#15803d', fontWeight: 600,
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}>
+                ✓ Selected: {allClients.find(c => c.client_id === selectedClientId)?.name} — {selectedClientId}
+              </div>
+            )}
+          </Form.Item>
+        ) : (
+          // ── Client mode: show fixed company name ──
+          <Form.Item label="Company Name" required>
+            <Input
+              className="cc-company-name-input"
+              value={loading ? 'Loading…' : clientName}
+              disabled
+              style={{ fontWeight: 600 }}
+            />
+          </Form.Item>
+        )}
+
         <Form.Item label="Advertiser (Brand)" required>
           <Input value={advertiser} onChange={(e) => setAdvertiser(e.target.value)} placeholder="Enter advertiser name…" style={{ width: '100%', height: 38 }} />
         </Form.Item>
@@ -1138,13 +1217,13 @@ function LineItemCard({
             onChange={(vals: string[]) => onChange(item.id, 'platforms', vals)}
             placeholder="Select Platforms" style={{ width: '100%' }} maxTagCount="responsive"
             optionRender={(option) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {/* ✅ Fix: use itemPlatforms (local var) not undefined 'platforms' */}
-                  <input type="checkbox" readOnly checked={itemPlatforms.includes(option.value as string)}
-                    style={{ accentColor: '#4f46e5', width: 14, height: 14, cursor: 'pointer' }} />
-                  <span>{option.label}</span>
-                </div>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* ✅ Fix: use itemPlatforms (local var) not undefined 'platforms' */}
+                <input type="checkbox" readOnly checked={itemPlatforms.includes(option.value as string)}
+                  style={{ accentColor: '#4f46e5', width: 14, height: 14, cursor: 'pointer' }} />
+                <span>{option.label}</span>
+              </div>
+            )}
             options={[
               { value: 'Display', label: 'Display' },
               { value: 'Video', label: 'Video' },
@@ -1405,15 +1484,12 @@ function SaveDraftModal({ visible, onConfirm, onCancel, defaultName }: {
 export default function Campaign_Create() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
-  const sideWidth = collapsed ? 64 : 240;
 
   const isBackNav = consumeNavFlag();
   const locationState = location.state as any;
   const isReturnFromCreative = !!(locationState?.fromCreativeUpload);
   const shouldRestoreDraft = isBackNav || isReturnFromCreative;
   const initialDraft = shouldRestoreDraft ? loadDraft() : null;
-  const clientName = localStorage.getItem('client_name') ?? '';
 
   const editingDraftId = locationState?.editDraftId as string | undefined;
   if (!shouldRestoreDraft) clearDraft();
@@ -1432,6 +1508,19 @@ export default function Campaign_Create() {
   const [confirmedLineItemIds, setConfirmedLineItemIds] = useState<Set<string>>(
     () => new Set<string>(restoredData?.confirmedLineItemIds ?? [])
   );
+
+  const superadminMode = !!(locationState?.superadminMode) || !!(locationState?.adminMode);
+
+  // Persist sidebar mode when component mounts
+  useEffect(() => {
+    if (locationState?.superadminMode) {
+      sessionStorage.setItem('sidebar_mode', 'superadmin');
+    } else if (locationState?.adminMode) {
+      sessionStorage.setItem('sidebar_mode', 'admin');
+    } else {
+      sessionStorage.setItem('sidebar_mode', 'user');
+    }
+}, [locationState?.superadminMode, locationState?.adminMode]);
 
   // Step 1
   const [client, setClient] = useState<string>(restoredData?.client ?? '');
@@ -1677,154 +1766,156 @@ export default function Campaign_Create() {
     4: { title: 'Review & Confirm', sub: 'Review all details before creating the campaign' },
   };
 
-  const handleCancel = () => { clearDraft(); navigate('/user_dashboard'); };
+  const handleCancel = () => {
+    clearDraft();
+    if (locationState?.superadminMode) {
+      navigate('/superadmin/campaigns');
+    } else if (locationState?.adminMode) {
+      navigate('/admin/campaigns');
+    } else {
+      navigate('/user_dashboard');
+    }
+};
   const defaultDraftName = campaignName.trim() || `Draft ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
 
   return (
-    <div className="cc-root">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-      <div className="cc-main" style={{ marginLeft: sideWidth }}>
-        <header className="cc-topbar">
-          <div className="cc-topbar-breadcrumb">
-            <Link to="/user_campaigns" style={{ color: 'var(--slate-500)', textDecoration: 'none' }}>Campaigns</Link>
-            <RightOutlined style={{ fontSize: 13 }} />
-            <span style={{ color: 'var(--slate)', fontWeight: 600 }}>Create Campaign</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="cc-topbar-avatar">{clientName ? clientName.charAt(0).toUpperCase() : 'AK'}</div>
-          </div>
-        </header>
+    <>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}>
+        <div>
+          <h1 style={{ fontSize: "18", fontWeight: 700, color: "#0F172A", }}>{editingDraftId ? 'Edit Draft Campaign' : 'Create New Campaign'}</h1>
+          <p style={{
+            fontSize: 11, color: "#64748B", marginTop: 1, letterSpacing: "0.04em", fontWeight: 500,
+          }}>FOLLOW THE STEPS BELOW TO CREATE A NEW CAMPAIGN</p>
+        </div>
 
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div className="cc-page-header">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h1 className="cc-page-title">{editingDraftId ? 'Edit Draft Campaign' : 'Create New Campaign'}</h1>
-                <p className="cc-page-sub">Follow the steps below to create a new campaign</p>
-              </div>
-              {currentDraftId && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '5px 12px', fontSize: 12, color: '#15803d', fontWeight: 600 }}>
-                  <SaveOutlined style={{ fontSize: 12 }} /> Draft saved
+        {currentDraftId && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '5px 12px', fontSize: 12, color: '#15803d', fontWeight: 600 }}>
+            <SaveOutlined style={{ fontSize: 12 }} /> Draft saved
+          </div>
+        )}
+      </div>
+
+
+      {submitStatus === 'success' && <div className="cc-banner cc-banner-success">✅ Campaign created successfully!</div>}
+      {submitStatus === 'error' && <div className="cc-banner cc-banner-error">❌ Submission failed: {errorMsg}</div>}
+
+      {/* Stepper */}
+      <div>
+        <div className="cc-stepper">
+          {STEPS.map((s, i) => {
+            const isActive = s.n === activeStep;
+            const isDone = s.n < activeStep;
+            return (
+              <React.Fragment key={s.n}>
+                <div className={`cc-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`} onClick={() => isDone && setActiveStep(s.n)}>
+                  <div className={`cc-step-circle ${isActive ? 'is-active' : isDone ? 'is-done' : 'inactive'}`}>
+                    {isDone ? <CheckOutlined style={{ fontSize: 13 }} /> : s.n}
+                  </div>
+                  <div>
+                    <div className={`cc-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</div>
+                    <div className={`cc-step-sub ${isActive ? 'active' : ''}`}>{s.sub}</div>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+                {i < STEPS.length - 1 && <div className={`cc-step-connector ${isDone ? 'done' : ''}`} />}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
 
-          {submitStatus === 'success' && <div className="cc-banner cc-banner-success">✅ Campaign created successfully!</div>}
-          {submitStatus === 'error' && <div className="cc-banner cc-banner-error">❌ Submission failed: {errorMsg}</div>}
-
-          {/* Stepper */}
-          <div className="cc-stepper-wrap">
-            <div className="cc-stepper">
-              {STEPS.map((s, i) => {
-                const isActive = s.n === activeStep;
-                const isDone = s.n < activeStep;
-                return (
-                  <React.Fragment key={s.n}>
-                    <div className={`cc-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`} onClick={() => isDone && setActiveStep(s.n)}>
-                      <div className={`cc-step-circle ${isActive ? 'is-active' : isDone ? 'is-done' : 'inactive'}`}>
-                        {isDone ? <CheckOutlined style={{ fontSize: 13 }} /> : s.n}
-                      </div>
-                      <div>
-                        <div className={`cc-step-label ${isActive ? 'active' : isDone ? 'done' : ''}`}>{s.label}</div>
-                        <div className={`cc-step-sub ${isActive ? 'active' : ''}`}>{s.sub}</div>
-                      </div>
-                    </div>
-                    {i < STEPS.length - 1 && <div className={`cc-step-connector ${isDone ? 'done' : ''}`} />}
-                  </React.Fragment>
-                );
-              })}
+      {/* Step Content */}
+      <div className="cc-content-wrap" key={activeStep}>
+        <div className="cc-card">
+          <div className="cc-card-header">
+            <div className="cc-card-step-badge">{activeStep}</div>
+            <div>
+              <div className="cc-card-title">{stepTitles[activeStep].title}</div>
+              <div className="cc-card-sub">{stepTitles[activeStep].sub}</div>
             </div>
+            <div className="cc-card-step-count">Step {activeStep} of {STEPS.length}</div>
           </div>
+          <div className="cc-card-body">
+            {activeStep === 1 && (
+              <Step1
+                client={client} setClient={setClient} setClientId={setClientId}
+                setClientCountry={setClientCountry} setClientCurrencySymbol={setClientCurrencySymbol}
+                advertiser={advertiser} setAdvertiser={setAdvertiser}
+                websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
+                superadminMode={superadminMode}  // ← ADD THIS
+              />
+            )}
+            {activeStep === 2 && (
+              <Step2
+                campaignId="" campaignName={campaignName} setCampaignName={setCampaignName}
+                clientCampaignId={clientCampaignId} setClientCampaignId={setClientCampaignId}
+                purchaseOrderId={purchaseOrderId} setPurchaseOrderId={setPurchaseOrderId}
+                campaignType={campaignType} setCampaignType={setCampaignType}
+                buyingType={buyingType} setBuyingType={setBuyingType}
+                objective={objective} setObjective={setObjective}
+                notes={notes} setNotes={setNotes}
+                startDate={startDate} setStartDate={setStartDate}
+                endDate={endDate} setEndDate={setEndDate}
+              />
+            )}
+            {/* ✅ Step 3 is now Line Items (no separate objectives step) */}
+            {activeStep === 3 && (
+              <Step3LineItems
+                campaignStartDate={startDate} campaignEndDate={endDate}
+                lineItems={lineItems} setLineItems={setLineItems}
+                lineItemCreatives={lineItemCreatives}
+                lineItemOffset={lineItemOffset}
+                confirmedLineItemIds={confirmedLineItemIds}
+                clientCurrencySymbol={clientCurrencySymbol}
+              />
+            )}
+            {/* ✅ Step 4 is now Review (was Step 5) */}
+            {activeStep === 4 && (
+              <Step4Review
+                client={client} advertiser={advertiser} websiteUrl={websiteUrl}
+                campaignName={campaignName} clientCampaignId={clientCampaignId}
+                purchaseOrderId={purchaseOrderId} campaignType={campaignType}
+                buyingType={buyingType} objective={objective} notes={notes}
+                startDate={startDate} endDate={endDate} durationDays={durationDays}
+                lineItems={lineItems} lineItemCreatives={lineItemCreatives}
+                onEdit={() => setActiveStep(1)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
 
-          {/* Step Content */}
-          <div className="cc-content-wrap" key={activeStep}>
-            <div className="cc-card">
-              <div className="cc-card-header">
-                <div className="cc-card-step-badge">{activeStep}</div>
-                <div>
-                  <div className="cc-card-title">{stepTitles[activeStep].title}</div>
-                  <div className="cc-card-sub">{stepTitles[activeStep].sub}</div>
-                </div>
-                <div className="cc-card-step-count">Step {activeStep} of {STEPS.length}</div>
-              </div>
-              <div className="cc-card-body">
-                {activeStep === 1 && (
-                  <Step1
-                    client={client} setClient={setClient} setClientId={setClientId}
-                    setClientCountry={setClientCountry} setClientCurrencySymbol={setClientCurrencySymbol}
-                    advertiser={advertiser} setAdvertiser={setAdvertiser}
-                    websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
-                  />
-                )}
-                {activeStep === 2 && (
-                  <Step2
-                    campaignId="" campaignName={campaignName} setCampaignName={setCampaignName}
-                    clientCampaignId={clientCampaignId} setClientCampaignId={setClientCampaignId}
-                    purchaseOrderId={purchaseOrderId} setPurchaseOrderId={setPurchaseOrderId}
-                    campaignType={campaignType} setCampaignType={setCampaignType}
-                    buyingType={buyingType} setBuyingType={setBuyingType}
-                    objective={objective} setObjective={setObjective}
-                    notes={notes} setNotes={setNotes}
-                    startDate={startDate} setStartDate={setStartDate}
-                    endDate={endDate} setEndDate={setEndDate}
-                  />
-                )}
-                {/* ✅ Step 3 is now Line Items (no separate objectives step) */}
-                {activeStep === 3 && (
-                  <Step3LineItems
-                    campaignStartDate={startDate} campaignEndDate={endDate}
-                    lineItems={lineItems} setLineItems={setLineItems}
-                    lineItemCreatives={lineItemCreatives}
-                    lineItemOffset={lineItemOffset}
-                    confirmedLineItemIds={confirmedLineItemIds}
-                    clientCurrencySymbol={clientCurrencySymbol}
-                  />
-                )}
-                {/* ✅ Step 4 is now Review (was Step 5) */}
-                {activeStep === 4 && (
-                  <Step4Review
-                    client={client} advertiser={advertiser} websiteUrl={websiteUrl}
-                    campaignName={campaignName} clientCampaignId={clientCampaignId}
-                    purchaseOrderId={purchaseOrderId} campaignType={campaignType}
-                    buyingType={buyingType} objective={objective} notes={notes}
-                    startDate={startDate} endDate={endDate} durationDays={durationDays}
-                    lineItems={lineItems} lineItemCreatives={lineItemCreatives}
-                    onEdit={() => setActiveStep(1)}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="cc-bottom-bar">
-            <Button className="cc-btn-cancel" onClick={handleCancel}>Cancel</Button>
-            <div className="cc-bottom-bar-actions">
-              <Button onClick={() => setShowSaveDraftModal(true)} icon={<SaveOutlined />}
-                style={{ height: 40, paddingLeft: 18, paddingRight: 18, borderRadius: 8, border: '1.5px solid #2563eb', color: '#2563eb', fontWeight: 600, fontSize: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {currentDraftId ? 'Update Draft' : 'Save Draft'}
-              </Button>
-              {activeStep > 1 && (
-                <Button className="cc-btn-back" onClick={() => setActiveStep(s => s - 1)}>← Back</Button>
-              )}
-              {/* ✅ Fix: total steps is now 4 */}
-              {activeStep < 4 ? (
-                <Button type="primary" className="cc-btn-next" onClick={handleNextStep} icon={<ArrowRightOutlined />} iconPosition="end">
-                  Next Step
-                </Button>
-              ) : (
-                <Button type="primary" className="cc-btn-submit" loading={submitting} onClick={handleSubmit} icon={<CheckOutlined />}>
-                  {submitting ? 'Creating…' : 'Create Campaign'}
-                </Button>
-              )}
-            </div>
-          </div>
-        </main>
+      {/* Bottom Bar */}
+      <div className="cc-bottom-bar">
+        <Button className="cc-btn-cancel" onClick={handleCancel}>Cancel</Button>
+        <div className="cc-bottom-bar-actions">
+          <Button onClick={() => setShowSaveDraftModal(true)} icon={<SaveOutlined />}
+            style={{ height: 40, paddingLeft: 18, paddingRight: 18, borderRadius: 8, border: '1.5px solid #2563eb', color: '#2563eb', fontWeight: 600, fontSize: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', gap: 6 }}>
+            {currentDraftId ? 'Update Draft' : 'Save Draft'}
+          </Button>
+          {activeStep > 1 && (
+            <Button className="cc-btn-back" onClick={() => setActiveStep(s => s - 1)}>← Back</Button>
+          )}
+          {/* ✅ Fix: total steps is now 4 */}
+          {activeStep < 4 ? (
+            <Button type="primary" className="cc-btn-next" onClick={handleNextStep} icon={<ArrowRightOutlined />} iconPosition="end">
+              Next Step
+            </Button>
+          ) : (
+            <Button type="primary" className="cc-btn-submit" loading={submitting} onClick={handleSubmit} icon={<CheckOutlined />}>
+              {submitting ? 'Creating…' : 'Create Campaign'}
+            </Button>
+          )}
+        </div>
       </div>
 
       <SaveDraftModal visible={showSaveDraftModal} defaultName={defaultDraftName}
         onConfirm={handleSaveDraft} onCancel={() => setShowSaveDraftModal(false)} />
-    </div>
+    </>
   );
 }

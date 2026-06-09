@@ -8,7 +8,6 @@ import {
     ReloadOutlined,
     CheckCircleOutlined,
 } from "@ant-design/icons";
-import Sidebar from "../shared/Sidebar";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -173,7 +172,6 @@ function generateIOHtml(campaign: Campaign, client: ClientDetail | null, ioId: s
 
     const contact = client?.contacts?.[0];
     const accountManager = "Praveen Kumar"
-    const paymentTerms = client?.billing?.payment_terms || campaign.notes?.includes("Net") ? campaign.notes || "—" : "—";
 
     const lineItemsRows = lineItems
         .map(
@@ -610,8 +608,6 @@ function IOPreviewModal({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function User_IO() {
-    const [collapsed, setCollapsed] = useState(false);
-    const sideWidth = collapsed ? 64 : 240;
 
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
@@ -754,32 +750,12 @@ export default function User_IO() {
     });
 
     return (
-        <div
-            style={{
-                display: "flex",
-                minHeight: "100vh",
-                background: C.bg,
-                fontFamily: "'Segoe UI', system-ui, sans-serif",
-            }}
-        >
-            <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+        <>
+            <div>
 
-            <div
-                style={{
-                    marginLeft: sideWidth,
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "margin-left 0.25s cubic-bezier(.4,0,.2,1)",
-                    minWidth: 0,
-                }}
-            >
                 {/* Topbar */}
-                <header
+                <div
                     style={{
-                        background: C.white,
-                        borderBottom: `1px solid ${C.slate300}`,
-                        padding: "0 28px",
                         height: 64,
                         display: "flex",
                         alignItems: "center",
@@ -812,508 +788,492 @@ export default function User_IO() {
                             VIEW & DOWNLOAD IO DOCUMENTS FOR YOUR CAMPAIGNS
                         </p>
                     </div>
-                    <div
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: "50%",
-                            background: C.blue,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: C.white,
-                            fontSize: 12,
-                            fontWeight: 800,
-                        }}
-                    >
-                        {clientName ? clientName.charAt(0).toUpperCase() : "U"}
-                    </div>
-                </header>
 
-                <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-                    {/* Info Banner */}
-                    <div
-                        style={{
-                            background: C.blueLight,
-                            border: `1px solid ${C.blueMid}`,
-                            borderRadius: 12,
-                            padding: "12px 18px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            marginBottom: 20,
-                            fontSize: 13,
+                </div>
+
+                {/* Info Banner */}
+                <div
+                    style={{
+                        background: C.blueLight,
+                        border: `1px solid ${C.blueMid}`,
+                        borderRadius: 12,
+                        padding: "12px 18px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 20,
+                        fontSize: 13,
+                        color: C.blue,
+                    }}
+                >
+                    <FileTextOutlined style={{ fontSize: 16, flexShrink: 0 }} />
+                    <span>
+                        Insertion Orders are available only for{" "}
+                        <strong>approved campaigns</strong>. Each IO is auto-generated
+                        from your campaign and client details.
+                    </span>
+                </div>
+
+                {/* Stats Row */}
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: 14,
+                        marginBottom: 20,
+                    }}
+                >
+                    {[
+                        {
+                            label: "Total",
+                            value: campaigns.length,
+                            icon: "📄",
                             color: C.blue,
+                            bg: C.blueLight,
+                        },
+                        {
+                            label: "This Month",
+                            value: campaigns.filter((c) => {
+                                const d = new Date(c.created_at);
+                                const now = new Date();
+                                return (
+                                    d.getMonth() === now.getMonth() &&
+                                    d.getFullYear() === now.getFullYear()
+                                );
+                            }).length,
+                            icon: "📅",
+                            color: C.green,
+                            bg: C.greenLight,
+                        },
+                        {
+                            label: "Active Campaigns",
+                            value: campaigns.filter((c) => {
+                                if (!c.start_date || !c.end_date) return false;
+                                const today = new Date();
+                                return (
+                                    today >= new Date(c.start_date) &&
+                                    today <= new Date(c.end_date)
+                                );
+                            }).length,
+                            icon: "🟢",
+                            color: C.amber,
+                            bg: C.amberLight,
+                        },
+                    ].map((stat) => (
+                        <div
+                            key={stat.label}
+                            style={{
+                                background: C.white,
+                                borderRadius: 12,
+                                padding: "18px 20px",
+                                border: `1px solid ${C.border}`,
+                                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 14,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 10,
+                                    background: stat.bg,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: 20,
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {stat.icon}
+                            </div>
+                            <div>
+                                <div
+                                    style={{
+                                        fontSize: 28,
+                                        fontWeight: 800,
+                                        color: stat.color,
+                                        lineHeight: 1,
+                                        letterSpacing: "-1px",
+                                    }}
+                                >
+                                    {stat.value}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 11,
+                                        color: C.slate500,
+                                        fontWeight: 600,
+                                        marginTop: 3,
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.05em",
+                                    }}
+                                >
+                                    {stat.label}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Search + Refresh */}
+                <div
+                    style={{
+                        background: C.white,
+                        borderRadius: 12,
+                        padding: "12px 16px",
+                        border: `1px solid ${C.border}`,
+                        marginBottom: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                    }}
+                >
+                    <Input
+                        placeholder="Search by Campaign ID, Name, Advertiser…"
+                        prefix={<SearchOutlined style={{ color: C.slate500 }} />}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        allowClear
+                        style={{ flex: 1, height: 36 }}
+                    />
+                    <Button
+                        icon={<ReloadOutlined />}
+                        onClick={fetchCampaigns}
+                        style={{
+                            height: 36,
+                            borderRadius: 8,
+                            border: `1px solid ${C.border}`,
+                            color: C.slate500,
+                            fontSize: 12,
+                            fontWeight: 600,
                         }}
                     >
-                        <FileTextOutlined style={{ fontSize: 16, flexShrink: 0 }} />
-                        <span>
-                            Insertion Orders are available only for{" "}
-                            <strong>approved campaigns</strong>. Each IO is auto-generated
-                            from your campaign and client details.
-                        </span>
-                    </div>
+                        Refresh
+                    </Button>
+                    <span
+                        style={{ fontSize: 12, color: C.slate500, whiteSpace: "nowrap" }}
+                    >
+                        {filtered.length} of {campaigns.length} IOs
+                    </span>
+                </div>
 
-                    {/* Stats Row */}
+                {/* Table */}
+                <div
+                    style={{
+                        background: C.white,
+                        borderRadius: 14,
+                        border: `1px solid ${C.border}`,
+                        overflow: "hidden",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                    }}
+                >
+                    {/* Table Header */}
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(3, 1fr)",
-                            gap: 14,
-                            marginBottom: 20,
+                            gridTemplateColumns: "160px 80px 1fr 150px 120px 120px 180px",
+                            padding: "10px 20px",
+                            background: C.slate100,
+                            borderBottom: `1px solid ${C.border}`,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: C.slate500,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.04em",
+                            gap: 12,
                         }}
                     >
-                        {[
-                            {
-                                label: "Total",
-                                value: campaigns.length,
-                                icon: "📄",
-                                color: C.blue,
-                                bg: C.blueLight,
-                            },
-                            {
-                                label: "This Month",
-                                value: campaigns.filter((c) => {
-                                    const d = new Date(c.created_at);
-                                    const now = new Date();
-                                    return (
-                                        d.getMonth() === now.getMonth() &&
-                                        d.getFullYear() === now.getFullYear()
-                                    );
-                                }).length,
-                                icon: "📅",
-                                color: C.green,
-                                bg: C.greenLight,
-                            },
-                            {
-                                label: "Active Campaigns",
-                                value: campaigns.filter((c) => {
-                                    if (!c.start_date || !c.end_date) return false;
-                                    const today = new Date();
-                                    return (
-                                        today >= new Date(c.start_date) &&
-                                        today <= new Date(c.end_date)
-                                    );
-                                }).length,
-                                icon: "🟢",
-                                color: C.amber,
-                                bg: C.amberLight,
-                            },
-                        ].map((stat) => (
-                            <div
-                                key={stat.label}
-                                style={{
-                                    background: C.white,
-                                    borderRadius: 12,
-                                    padding: "18px 20px",
-                                    border: `1px solid ${C.border}`,
-                                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 14,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: 44,
-                                        height: 44,
-                                        borderRadius: 10,
-                                        background: stat.bg,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: 20,
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    {stat.icon}
-                                </div>
-                                <div>
-                                    <div
-                                        style={{
-                                            fontSize: 28,
-                                            fontWeight: 800,
-                                            color: stat.color,
-                                            lineHeight: 1,
-                                            letterSpacing: "-1px",
-                                        }}
-                                    >
-                                        {stat.value}
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: 11,
-                                            color: C.slate500,
-                                            fontWeight: 600,
-                                            marginTop: 3,
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.05em",
-                                        }}
-                                    >
-                                        {stat.label}
-                                    </div>
-                                </div>
+                        <div>Campaign ID</div>
+                        <div>IO #</div>
+                        <div>Campaign Name</div>
+                        <div>Advertiser</div>
+                        <div>Start Date</div>
+                        <div>End Date</div>
+                        <div>Actions</div>
+                    </div>
+
+                    {/* Rows */}
+                    {loading ? (
+                        <div style={{ padding: "48px", textAlign: "center", color: C.slate500 }}>
+                            <Spin size="large" />
+                            <div style={{ marginTop: 12, fontSize: 13 }}>
+                                Loading Insertion Orders…
                             </div>
-                        ))}
-                    </div>
-
-                    {/* Search + Refresh */}
-                    <div
-                        style={{
-                            background: C.white,
-                            borderRadius: 12,
-                            padding: "12px 16px",
-                            border: `1px solid ${C.border}`,
-                            marginBottom: 16,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                        }}
-                    >
-                        <Input
-                            placeholder="Search by Campaign ID, Name, Advertiser…"
-                            prefix={<SearchOutlined style={{ color: C.slate500 }} />}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            allowClear
-                            style={{ flex: 1, height: 36 }}
-                        />
-                        <Button
-                            icon={<ReloadOutlined />}
-                            onClick={fetchCampaigns}
-                            style={{
-                                height: 36,
-                                borderRadius: 8,
-                                border: `1px solid ${C.border}`,
-                                color: C.slate500,
-                                fontSize: 12,
-                                fontWeight: 600,
-                            }}
-                        >
-                            Refresh
-                        </Button>
-                        <span
-                            style={{ fontSize: 12, color: C.slate500, whiteSpace: "nowrap" }}
-                        >
-                            {filtered.length} of {campaigns.length} IOs
-                        </span>
-                    </div>
-
-                    {/* Table */}
-                    <div
-                        style={{
-                            background: C.white,
-                            borderRadius: 14,
-                            border: `1px solid ${C.border}`,
-                            overflow: "hidden",
-                            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                        }}
-                    >
-                        {/* Table Header */}
-                        <div
-                            style={{
-                                display: "grid",
-                                gridTemplateColumns: "160px 80px 1fr 150px 120px 120px 180px",
-                                padding: "10px 20px",
-                                background: C.slate100,
-                                borderBottom: `1px solid ${C.border}`,
-                                fontSize: 11,
-                                fontWeight: 700,
-                                color: C.slate500,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.04em",
-                                gap: 12,
-                            }}
-                        >
-                            <div>Campaign ID</div>
-                            <div>IO #</div>
-                            <div>Campaign Name</div>
-                            <div>Advertiser</div>
-                            <div>Start Date</div>
-                            <div>End Date</div>
-                            <div>Actions</div>
                         </div>
-
-                        {/* Rows */}
-                        {loading ? (
-                            <div style={{ padding: "48px", textAlign: "center", color: C.slate500 }}>
-                                <Spin size="large" />
-                                <div style={{ marginTop: 12, fontSize: 13 }}>
-                                    Loading Insertion Orders…
-                                </div>
-                            </div>
-                        ) : filtered.length === 0 ? (
-                            <div style={{ padding: "48px 24px", textAlign: "center" }}>
-                                <Empty
-                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                    description={
-                                        <div>
-                                            <div style={{ fontSize: 14, fontWeight: 600, color: C.slate, marginBottom: 4 }}>
-                                                {campaigns.length === 0 ? "No approved campaigns yet" : "No results found"}
-                                            </div>
-                                            <div style={{ fontSize: 12, color: C.slate500 }}>
-                                                {campaigns.length === 0
-                                                    ? "Insertion Orders will appear here once your campaigns are approved by the admin."
-                                                    : "Try adjusting your search query."}
-                                            </div>
+                    ) : filtered.length === 0 ? (
+                        <div style={{ padding: "48px 24px", textAlign: "center" }}>
+                            <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description={
+                                    <div>
+                                        <div style={{ fontSize: 14, fontWeight: 600, color: C.slate, marginBottom: 4 }}>
+                                            {campaigns.length === 0 ? "No approved campaigns yet" : "No results found"}
                                         </div>
+                                        <div style={{ fontSize: 12, color: C.slate500 }}>
+                                            {campaigns.length === 0
+                                                ? "Insertion Orders will appear here once your campaigns are approved by the admin."
+                                                : "Try adjusting your search query."}
+                                        </div>
+                                    </div>
+                                }
+                            />
+                        </div>
+                    ) : (
+                        filtered.map((campaign, idx) => {
+                            // ✅ bookingIOId REMOVED — now using ioMap from backend
+                            const lineItemCount = campaign.line_items?.length ?? 0;
+
+                            return (
+                                <div
+                                    key={campaign.id}
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "160px 80px 1fr 150px 120px 120px 180px",
+                                        padding: "14px 20px",
+                                        borderBottom: idx < filtered.length - 1 ? `1px solid ${C.border}` : "none",
+                                        alignItems: "center",
+                                        gap: 12,
+                                        background: idx % 2 === 0 ? C.white : "#FAFBFC",
+                                        transition: "background 0.12s",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                        ((e.currentTarget as HTMLDivElement).style.background = C.slate100)
                                     }
-                                />
-                            </div>
-                        ) : (
-                            filtered.map((campaign, idx) => {
-                                // ✅ bookingIOId REMOVED — now using ioMap from backend
-                                const lineItemCount = campaign.line_items?.length ?? 0;
-
-                                return (
-                                    <div
-                                        key={campaign.id}
-                                        style={{
-                                            display: "grid",
-                                            gridTemplateColumns: "160px 80px 1fr 150px 120px 120px 180px",
-                                            padding: "14px 20px",
-                                            borderBottom: idx < filtered.length - 1 ? `1px solid ${C.border}` : "none",
-                                            alignItems: "center",
-                                            gap: 12,
-                                            background: idx % 2 === 0 ? C.white : "#FAFBFC",
-                                            transition: "background 0.12s",
-                                        }}
-                                        onMouseEnter={(e) =>
-                                            ((e.currentTarget as HTMLDivElement).style.background = C.slate100)
-                                        }
-                                        onMouseLeave={(e) =>
-                                        ((e.currentTarget as HTMLDivElement).style.background =
-                                            idx % 2 === 0 ? C.white : "#FAFBFC")
-                                        }
-                                    >
-                                        {/* Campaign ID */}
-                                        <div>
-                                            <span
-                                                style={{
-                                                    fontSize: 12,
-                                                    fontWeight: 700,
-                                                    color: C.blue,
-                                                    background: C.blueLight,
-                                                    padding: "3px 8px",
-                                                    borderRadius: 6,
-                                                    fontFamily: "monospace",
-                                                }}
-                                            >
-                                                {campaign.campaign_id}
-                                            </span>
-                                        </div>
-
-                                        {/* IO # — ✅ Now shows real IO ID from backend */}
-                                        <div>
-                                            <span
-                                                style={{
-                                                    fontSize: 11,
-                                                    fontWeight: 700,
-                                                    color: C.amber,
-                                                    background: C.amberLight,
-                                                    padding: "3px 7px",
-                                                    borderRadius: 5,
-                                                    fontFamily: "monospace",
-                                                    border: `1px solid #FDE68A`,
-                                                }}
-                                            >
-                                                {ioMap[campaign.campaign_id] ?? "—"}
-                                            </span>
-                                        </div>
-
-                                        {/* Campaign Name */}
-                                        <div>
-                                            <div style={{ fontSize: 13, fontWeight: 600, color: C.slate, marginBottom: 3 }}>
-                                                {campaign.campaign_name}
-                                            </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                                {campaign.campaign_type && (
-                                                    <Tag color="blue" style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}>
-                                                        {campaign.campaign_type}
-                                                    </Tag>
-                                                )}
-                                                <Tag color="purple" style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}>
-                                                    {lineItemCount} line item{lineItemCount !== 1 ? "s" : ""}
-                                                </Tag>
-                                                <span
-                                                    style={{
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                        gap: 3,
-                                                        fontSize: 10,
-                                                        fontWeight: 700,
-                                                        color: C.green,
-                                                        background: C.greenLight,
-                                                        padding: "1px 6px",
-                                                        borderRadius: 4,
-                                                        border: "1px solid #BBF7D0",
-                                                    }}
-                                                >
-                                                    <CheckCircleOutlined style={{ fontSize: 9 }} />
-                                                    Approved
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Advertiser */}
-                                        <div
+                                    onMouseLeave={(e) =>
+                                    ((e.currentTarget as HTMLDivElement).style.background =
+                                        idx % 2 === 0 ? C.white : "#FAFBFC")
+                                    }
+                                >
+                                    {/* Campaign ID */}
+                                    <div>
+                                        <span
                                             style={{
                                                 fontSize: 12,
-                                                color: C.slate700,
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap",
+                                                fontWeight: 700,
+                                                color: C.blue,
+                                                background: C.blueLight,
+                                                padding: "3px 8px",
+                                                borderRadius: 6,
+                                                fontFamily: "monospace",
                                             }}
                                         >
-                                            {campaign.advertiser || "—"}
-                                        </div>
+                                            {campaign.campaign_id}
+                                        </span>
+                                    </div>
 
-                                        {/* Start Date */}
-                                        <div style={{ fontSize: 12, color: C.slate }}>
-                                            {fmtDate(campaign.start_date)}
-                                        </div>
+                                    {/* IO # — ✅ Now shows real IO ID from backend */}
+                                    <div>
+                                        <span
+                                            style={{
+                                                fontSize: 11,
+                                                fontWeight: 700,
+                                                color: C.amber,
+                                                background: C.amberLight,
+                                                padding: "3px 7px",
+                                                borderRadius: 5,
+                                                fontFamily: "monospace",
+                                                border: `1px solid #FDE68A`,
+                                            }}
+                                        >
+                                            {ioMap[campaign.campaign_id] ?? "—"}
+                                        </span>
+                                    </div>
 
-                                        {/* End Date */}
-                                        <div style={{ fontSize: 12, color: C.slate }}>
-                                            {fmtDate(campaign.end_date)}
+                                    {/* Campaign Name */}
+                                    <div>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.slate, marginBottom: 3 }}>
+                                            {campaign.campaign_name}
                                         </div>
-
-                                        {/* Actions */}
-                                        <div style={{ display: "flex", gap: 8 }}>
-                                            <Button
-                                                size="small"
-                                                icon={<EyeOutlined />}
-                                                onClick={() => handlePreview(campaign)}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                            {campaign.campaign_type && (
+                                                <Tag color="blue" style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}>
+                                                    {campaign.campaign_type}
+                                                </Tag>
+                                            )}
+                                            <Tag color="purple" style={{ fontSize: 10, margin: 0, lineHeight: "18px" }}>
+                                                {lineItemCount} line item{lineItemCount !== 1 ? "s" : ""}
+                                            </Tag>
+                                            <span
                                                 style={{
-                                                    fontSize: 11,
-                                                    fontWeight: 600,
-                                                    color: C.blue,
-                                                    background: C.blueLight,
-                                                    border: `1px solid ${C.blueMid}`,
-                                                    borderRadius: 6,
-                                                    height: 30,
-                                                    display: "flex",
+                                                    display: "inline-flex",
                                                     alignItems: "center",
-                                                    gap: 4,
-                                                }}
-                                            >
-                                                Preview
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                icon={<DownloadOutlined />}
-                                                onClick={async () => {
-                                                    setPreviewCampaign(campaign);
-                                                    setDownloading(true);
-                                                    let clientData: ClientDetail | null = null;
-                                                    try {
-                                                        const res = await fetch(
-                                                            `${BASE_URL}/get_client/${clientId}/`,
-                                                            { headers: { "ngrok-skip-browser-warning": "1" } }
-                                                        );
-                                                        if (res.ok) clientData = await res.json();
-                                                    } catch { /* ignore */ }
-
-                                                    const html = generateIOHtml(
-                                                        campaign,
-                                                        clientData,
-                                                        ioMap[campaign.campaign_id] ?? "—"  // ✅ pass real IO ID
-                                                    );
-                                                    const printWindow = window.open("", "_blank", "width=1000,height=800");
-                                                    if (!printWindow) {
-                                                        alert("Please allow popups to download the PDF.");
-                                                        setDownloading(false);
-                                                        return;
-                                                    }
-                                                    printWindow.document.write(html);
-                                                    printWindow.document.close();
-                                                    setTimeout(() => {
-                                                        printWindow.focus();
-                                                        printWindow.print();
-                                                        setTimeout(() => {
-                                                            printWindow.close();
-                                                            setDownloading(false);
-                                                        }, 2000);
-                                                    }, 800);
-
-                                                    // ── Save IO record to backend ──
-                                                    const formData = new FormData();
-                                                    formData.append("campaign_id", campaign.campaign_id);
-                                                    await fetch(`${BASE_URL}/save_insertion_order/`, {
-                                                        method: "POST",
-                                                        headers: { "ngrok-skip-browser-warning": "1" },
-                                                        body: formData,
-                                                    });
-                                                    fetchIOs(); // ✅ refresh IO map after saving
-                                                }}
-                                                style={{
-                                                    fontSize: 11,
-                                                    fontWeight: 600,
+                                                    gap: 3,
+                                                    fontSize: 10,
+                                                    fontWeight: 700,
                                                     color: C.green,
                                                     background: C.greenLight,
+                                                    padding: "1px 6px",
+                                                    borderRadius: 4,
                                                     border: "1px solid #BBF7D0",
-                                                    borderRadius: 6,
-                                                    height: 30,
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: 4,
                                                 }}
                                             >
-                                                Download
-                                            </Button>
+                                                <CheckCircleOutlined style={{ fontSize: 9 }} />
+                                                Approved
+                                            </span>
                                         </div>
                                     </div>
-                                );
-                            })
-                        )}
-                    </div>
-                    {/* Loading client hint inside preview */}
-                    {loadingClient && previewCampaign && (
-                        <div
-                            style={{
-                                position: "fixed",
-                                bottom: 24,
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                                background: C.white,
-                                border: `1px solid ${C.border}`,
-                                borderRadius: 10,
-                                padding: "10px 18px",
-                                fontSize: 13,
-                                color: C.slate500,
-                                boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                                zIndex: 2000,
-                            }}
-                        >
-                            <Spin size="small" />
-                            Loading client details for IO…
-                        </div>
+
+                                    {/* Advertiser */}
+                                    <div
+                                        style={{
+                                            fontSize: 12,
+                                            color: C.slate700,
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                        }}
+                                    >
+                                        {campaign.advertiser || "—"}
+                                    </div>
+
+                                    {/* Start Date */}
+                                    <div style={{ fontSize: 12, color: C.slate }}>
+                                        {fmtDate(campaign.start_date)}
+                                    </div>
+
+                                    {/* End Date */}
+                                    <div style={{ fontSize: 12, color: C.slate }}>
+                                        {fmtDate(campaign.end_date)}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                        <Button
+                                            size="small"
+                                            icon={<EyeOutlined />}
+                                            onClick={() => handlePreview(campaign)}
+                                            style={{
+                                                fontSize: 11,
+                                                fontWeight: 600,
+                                                color: C.blue,
+                                                background: C.blueLight,
+                                                border: `1px solid ${C.blueMid}`,
+                                                borderRadius: 6,
+                                                height: 30,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 4,
+                                            }}
+                                        >
+                                            Preview
+                                        </Button>
+                                        <Button
+                                            size="small"
+                                            icon={<DownloadOutlined />}
+                                            onClick={async () => {
+                                                setPreviewCampaign(campaign);
+                                                setDownloading(true);
+                                                let clientData: ClientDetail | null = null;
+                                                try {
+                                                    const res = await fetch(
+                                                        `${BASE_URL}/get_client/${clientId}/`,
+                                                        { headers: { "ngrok-skip-browser-warning": "1" } }
+                                                    );
+                                                    if (res.ok) clientData = await res.json();
+                                                } catch { /* ignore */ }
+
+                                                const html = generateIOHtml(
+                                                    campaign,
+                                                    clientData,
+                                                    ioMap[campaign.campaign_id] ?? "—"  // ✅ pass real IO ID
+                                                );
+                                                const printWindow = window.open("", "_blank", "width=1000,height=800");
+                                                if (!printWindow) {
+                                                    alert("Please allow popups to download the PDF.");
+                                                    setDownloading(false);
+                                                    return;
+                                                }
+                                                printWindow.document.write(html);
+                                                printWindow.document.close();
+                                                setTimeout(() => {
+                                                    printWindow.focus();
+                                                    printWindow.print();
+                                                    setTimeout(() => {
+                                                        printWindow.close();
+                                                        setDownloading(false);
+                                                    }, 2000);
+                                                }, 800);
+
+                                                // ── Save IO record to backend ──
+                                                const formData = new FormData();
+                                                formData.append("campaign_id", campaign.campaign_id);
+                                                await fetch(`${BASE_URL}/save_insertion_order/`, {
+                                                    method: "POST",
+                                                    headers: { "ngrok-skip-browser-warning": "1" },
+                                                    body: formData,
+                                                });
+                                                fetchIOs(); // ✅ refresh IO map after saving
+                                            }}
+                                            style={{
+                                                fontSize: 11,
+                                                fontWeight: 600,
+                                                color: C.green,
+                                                background: C.greenLight,
+                                                border: "1px solid #BBF7D0",
+                                                borderRadius: 6,
+                                                height: 30,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 4,
+                                            }}
+                                        >
+                                            Download
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })
                     )}
-                </main>
-            </div>
+                </div>
+                {/* Loading client hint inside preview */}
+                {loadingClient && previewCampaign && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            bottom: 24,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            background: C.white,
+                            border: `1px solid ${C.border}`,
+                            borderRadius: 10,
+                            padding: "10px 18px",
+                            fontSize: 13,
+                            color: C.slate500,
+                            boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            zIndex: 2000,
+                        }}
+                    >
+                        <Spin size="small" />
+                        Loading client details for IO…
+                    </div>
+                )}
 
-            {/* IO Preview Modal */}
-            <IOPreviewModal
-                open={!!previewCampaign}
-                campaign={previewCampaign}
-                client={previewClient}
-                ioId={previewCampaign ? (ioMap[previewCampaign.campaign_id] ?? "—") : "—"}  // ← ADD
-                onClose={() => {
-                    setPreviewCampaign(null);
-                    setPreviewClient(null);
-                }}
-                onDownload={handleDownload}
-                downloading={downloading}
-            />
 
-            <style>{`
+                {/* IO Preview Modal */}
+                <IOPreviewModal
+                    open={!!previewCampaign}
+                    campaign={previewCampaign}
+                    client={previewClient}
+                    ioId={previewCampaign ? (ioMap[previewCampaign.campaign_id] ?? "—") : "—"}  // ← ADD
+                    onClose={() => {
+                        setPreviewCampaign(null);
+                        setPreviewClient(null);
+                    }}
+                    onDownload={handleDownload}
+                    downloading={downloading}
+                />
+
+                <style>{`
         .ant-table-thead > tr > th {
           background: #F1F5F9 !important;
         }
       `}</style>
-        </div>
+            </div>
+        </>
     );
 }

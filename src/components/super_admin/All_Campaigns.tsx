@@ -1471,7 +1471,7 @@ function DeleteModal({
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export default function Admin_Campaigns() {
+export default function All_Campaigns() {
     const navigate = useNavigate();
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
@@ -1681,6 +1681,19 @@ export default function Admin_Campaigns() {
                 <div>
                     <h1 style={{ fontSize: 20, fontWeight: 700, color: C.slate, margin: 0, letterSpacing: "-0.4px" }}>All Campaigns</h1>
                     <p style={{ fontSize: 11, color: C.slate500, margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.04em" }}>MANAGE & TRACK ALL CLIENT CAMPAIGNS</p>
+                </div>
+                <div>
+                    <Button
+                        onClick={() => navigate('/campaign_create', { state: { superadminMode: true } })}
+                        style={{
+                            borderRadius: 9, border: "none",
+                            background: C.blue, color: "#fff",
+                            fontSize: 13, fontWeight: 700,
+                            boxShadow: `0 4px 14px ${C.green}44`,
+                        }}
+                    >
+                        <PlusOutlined /> Add New Campaign
+                    </Button>
                 </div>
             </div>
 

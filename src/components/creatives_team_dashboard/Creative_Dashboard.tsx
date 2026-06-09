@@ -1,9 +1,9 @@
+// Creative_Dashboard.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Tag, Badge, Input, Button, Typography } from 'antd';
 import { SearchOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import CreativeSidebar from '../creatives_team_dashboard/CreativeSidebar'; // ← updated import
 import CreativesCell from './CreativesCell';
 
 const { Text } = Typography;
@@ -19,7 +19,6 @@ const SLATE = '#0F172A';
 const SLATE_300 = '#CBD5E1';
 const SLATE_500 = '#64748B';
 const WHITE = '#FFFFFF';
-const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
 
 interface CreativeDetail {
@@ -65,19 +64,13 @@ const STATUS_COLOR: Record<string, string> = {
   pending: 'gold', draft: 'default', completed: 'purple', cancelled: 'red',
 };
 
-
 export default function Creative_Dashboard() {
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const sideWidth = collapsed ? 64 : 240;
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filtered, setFiltered] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
-  const clientName = localStorage.getItem('client_name') ?? '';
-  const avatarInitials = clientName ? clientName.charAt(0).toUpperCase() : 'U';
 
   const fetchCampaigns = () => {
     setLoading(true);
@@ -85,7 +78,6 @@ export default function Creative_Dashboard() {
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => {
         const list: Campaign[] = Array.isArray(data) ? data : data?.campaigns ?? [];
-        // ✅ Only show approved campaigns
         const approved = list.filter(c => c.approval_status === 'approved');
         setCampaigns(approved);
         setFiltered(approved);
@@ -226,7 +218,7 @@ export default function Creative_Dashboard() {
           : <Text style={{ color: SLATE_500, fontSize: 12 }}>—</Text>;
       },
     },
-     {
+    {
       title: 'Status', dataIndex: 'status', width: 100,
       render: (v: string) => (
         <Badge
@@ -239,145 +231,113 @@ export default function Creative_Dashboard() {
       title: 'Creatives', key: 'creatives', width: 220,
       render: (_: any, r: LineItem) => <CreativesCell li={r} />,
     },
-   
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: BG, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-
-      {/* ← CreativeSidebar replaces the old shared Sidebar */}
-      <CreativeSidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-
-      <div style={{ marginLeft: sideWidth, flex: 1, display: 'flex', flexDirection: 'column', transition: 'margin-left 0.25s', minWidth: 0 }}>
-
-        {/* Header */}
-        <header style={{
-          background: WHITE, borderBottom: `1px solid ${SLATE_300}`,
-          padding: '0 28px', height: 64,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 50,
-        }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: SLATE }}>Creative Dashboard</div>
-            <div style={{ fontSize: 11, color: SLATE_500, letterSpacing: '0.04em' }}>VIEW &amp; MANAGE CREATIVES ACROSS CAMPAIGNS</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-             <div style={{
-          width: 36, height: 36, borderRadius: '50%', background: BLUE,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: WHITE, fontSize: 12, fontWeight: 800, cursor: 'pointer',
-        }}>
-          {avatarInitials ?? 'U'}
-        </div>
-          </div>
-        </header>
-
-        <main style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
-            {[
-              { label: 'Total Campaigns', value: totalCampaigns, color: PURPLE, bg: PURPLE_LIGHT, border: PURPLE_MID },
-              { label: 'Total Line Items', value: totalLineItems, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
-              { label: 'Total Creatives', value: totalCreatives, color: '#059669', bg: '#f0fdf4', border: '#86efac' },
-            ].map(s => (
-              <div key={s.label} style={{
-                background: WHITE, border: `1px solid ${SLATE_300}`,
-                borderRadius: 12, padding: '16px 20px',
-                display: 'flex', alignItems: 'center', gap: 14,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10,
-                  background: s.bg, border: `1px solid ${s.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, fontWeight: 800, color: s.color,
-                }}>{s.value}</div>
-                <div style={{ fontSize: 13, color: SLATE_500, fontWeight: 500 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Filters */}
-          <div style={{
-            background: WHITE, borderRadius: 12, padding: '14px 18PX',
-            border: `1px solid ${BORDER}`, marginBottom: 16,
-            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          }}>
-            <Input
-              placeholder="Search by campaign name, ID…"
-              prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ flex: 1, minWidth: 240, height: 36 }}
-              allowClear
-            />
-            
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchCampaigns}
-              style={{ height: 36, borderRadius: 8, border: `1px solid ${BORDER}`, background: WHITE, color: SLATE_500, fontSize: 12, fontWeight: 600 }}
-            >
-              Refresh
-            </Button>
-            <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
-              {filtered.length} of {totalCampaigns} campaigns
-            </Text>
-          </div>
-
-          {/* Table */}
-          <div style={{
-            background: WHITE, borderRadius: 12,
-            border: `1px solid ${SLATE_300}`,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden',
-          }}>
-            <Table
-              columns={columns}
-              dataSource={filtered}
-              rowKey="campaign_id"
-              loading={loading}
-              scroll={{ x: 1100 }}
-              pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t, r) => `${r[0]}–${r[1]} of ${t}` }}
-              expandable={{
-                expandedRowRender: (record: Campaign) => {
-                  if (!record.line_items?.length) {
-                    return <Text style={{ color: SLATE_500, fontSize: 12 }}>No line items.</Text>;
-                  }
-                  return (
-                    <div style={{ padding: '8px 0' }}>
-                      <Text strong style={{ fontSize: 12, color: SLATE, marginBottom: 8, display: 'block' }}>
-                        Line Items ({record.line_items.length})
-                      </Text>
-                      <Table
-                        size="small"
-                        dataSource={record.line_items}
-                        rowKey="line_item_id"
-                        pagination={false}
-                        columns={lineItemColumns}
-                        scroll={{ x: 1100 }}
-                        style={{ background: '#fafbff', borderRadius: 8 }}
-                      />
-                    </div>
-                  );
-                },
-                rowExpandable: () => true,
-              }}
-              style={{ fontSize: 13 }}
-            />
-          </div>
-        </main>
+    <>
+      {/* Page heading */}
+      <div style={{ marginBottom: 20 }}>
+        <h1
+          style={{ fontSize: 18, fontWeight: 700, color: SLATE, }}>
+          Creative Dashboard
+        </h1>
+        <p
+          style={{ fontSize: 11, color: SLATE_500, marginTop: 1, letterSpacing: "0.04em", fontWeight: 500, }}
+        >
+          VIEW &amp; MANAGE CREATIVES ACROSS CAMPAIGNS
+        </p>
       </div>
 
-      <style>{`
-        .ant-table-thead > tr > th {
-          background: #F1F5F9 !important;
-          font-size: 11px !important;
-          font-weight: 700 !important;
-          color: #64748B !important;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-      `}</style>
-    </div>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+        {[
+          { label: 'Total Campaigns', value: totalCampaigns, color: PURPLE, bg: PURPLE_LIGHT, border: PURPLE_MID },
+          { label: 'Total Line Items', value: totalLineItems, color: BLUE, bg: BLUE_LIGHT, border: '#bfdbfe' },
+          { label: 'Total Creatives', value: totalCreatives, color: '#059669', bg: '#f0fdf4', border: '#86efac' },
+        ].map(s => (
+          <div key={s.label} style={{
+            background: WHITE, border: `1px solid ${SLATE_300}`,
+            borderRadius: 12, padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 10,
+              background: s.bg, border: `1px solid ${s.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, fontWeight: 800, color: s.color,
+            }}>{s.value}</div>
+            <div style={{ fontSize: 13, color: SLATE_500, fontWeight: 500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div style={{
+        background: WHITE, borderRadius: 12, padding: '14px 18px',
+        border: `1px solid ${BORDER}`, marginBottom: 16,
+        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+      }}>
+        <Input
+          placeholder="Search by campaign name, ID…"
+          prefix={<SearchOutlined style={{ color: SLATE_500 }} />}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, minWidth: 240, height: 36 }}
+          allowClear
+        />
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchCampaigns}
+          style={{ height: 36, borderRadius: 8, border: `1px solid ${BORDER}`, background: WHITE, color: SLATE_500, fontSize: 12, fontWeight: 600 }}
+        >
+          Refresh
+        </Button>
+        <Text style={{ marginLeft: 'auto', fontSize: 12, color: SLATE_500 }}>
+          {filtered.length} of {totalCampaigns} campaigns
+        </Text>
+      </div>
+
+      {/* Table */}
+      <div style={{
+        background: WHITE, borderRadius: 12,
+        border: `1px solid ${SLATE_300}`,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden',
+      }}>
+        <Table
+          columns={columns}
+          dataSource={filtered}
+          rowKey="campaign_id"
+          loading={loading}
+          scroll={{ x: 1100 }}
+          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t, r) => `${r[0]}–${r[1]} of ${t}` }}
+          expandable={{
+            expandedRowRender: (record: Campaign) => {
+              if (!record.line_items?.length) {
+                return <Text style={{ color: SLATE_500, fontSize: 12 }}>No line items.</Text>;
+              }
+              return (
+                <div style={{ padding: '8px 0' }}>
+                  <Text strong style={{ fontSize: 12, color: SLATE, marginBottom: 8, display: 'block' }}>
+                    Line Items ({record.line_items.length})
+                  </Text>
+                  <Table
+                    size="small"
+                    dataSource={record.line_items}
+                    rowKey="line_item_id"
+                    pagination={false}
+                    columns={lineItemColumns}
+                    scroll={{ x: 1100 }}
+                    style={{ background: '#fafbff', borderRadius: 8 }}
+                  />
+                </div>
+              );
+            },
+            rowExpandable: () => true,
+          }}
+          style={{ fontSize: 13 }}
+        />
+      </div>
+    </>
   );
 }

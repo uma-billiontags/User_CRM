@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
 import {
   Form, Input, Select, Switch, Button, Upload, Tabs, Typography, Divider
 } from "antd";
@@ -11,6 +10,7 @@ import "../styles/Onboarding.css";
 import type { ContactRow, AddressRow, CompanyForm, Country, PhoneInputProps, AddNewSelectProps } from '../types/onboard.form.types';
 import { getExampleNumber, isSupportedCountry } from "libphonenumber-js";
 import examples from "libphonenumber-js/mobile/examples";
+import { useNavigate } from "react-router-dom";
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -796,6 +796,7 @@ export default function Onboarding() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [countries, setCountries] = useState<Country[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("https://restcountries.com/v3.1/all?fields=name,flags,idd,cca2")
@@ -1124,14 +1125,13 @@ export default function Onboarding() {
     <div className="min-h-screen bg-gray-100">
 
       <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 gap-3 sticky top-0 z-40 shadow-sm">
-        <Link to="/">
-          <Button
-            icon={<ArrowLeftOutlined />}
-            style={{ border: `1px solid #CBD5E1`, color: '#64748B', fontWeight: 600 }}
-          >
-            Back
-          </Button>
-        </Link>
+        <Button
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate(-1)}  // ← goes back to previous page
+          style={{ border: `1px solid #CBD5E1`, color: '#64748B', fontWeight: 600 }}
+        >
+          Back
+        </Button>
 
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">B</div>
@@ -1162,9 +1162,13 @@ export default function Onboarding() {
 
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <Link to="/" className="w-8 h-8 grid place-items-center rounded-md text-gray-400 hover:bg-gray-100">
+              <button
+                onClick={() => navigate(-1)}
+                className="w-8 h-8 grid place-items-center rounded-md text-gray-400 hover:bg-gray-100"
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
+              >
                 <ArrowLeftOutlined />
-              </Link>
+              </button>
               <div>
                 <p className="font-semibold text-gray-800 text-sm">Add New Client</p>
                 <p className="text-xs text-gray-400 mt-0.5">Create a new client profile with all required details</p>
