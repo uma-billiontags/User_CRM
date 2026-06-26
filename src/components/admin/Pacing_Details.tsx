@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { Table, Tabs, Select, Input, Button } from "antd";
 import { ReloadOutlined, SearchOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-
 
 const C = {
     bg: "#F8FAFC",
@@ -52,10 +51,10 @@ export interface PacingRow {
     last_day_impression: number | null;
     last_day_date: string | null;
     pct: number | null;
-    status: "under" | "over" | "not_uploaded";
+    status: "under" | "over";
 }
 
-type PacingStatus = "under" | "over" | "not_uploaded";
+type PacingStatus = "under" | "over";
 
 const TAB_CONFIG: { key: PacingStatus; label: string; path: string }[] = [
     { key: "under", label: "Under Pacing", path: "/admin/under-pacing" },
@@ -100,31 +99,18 @@ function IoBadge({ id }: { id: string }) {
     );
 }
 
-// ── Pacing status badge (pill, like StatusBadge in Daily_Reports) ───────────
-function PacingStatusBadge({ status }: { status: PacingRow["status"] }) {
-    const map: Record<string, { bg: string; border: string; color: string; label: string }> = {
-        under: { bg: C.redLight, border: "#FECACA", color: C.red, label: "Under Pacing" },
-        over: { bg: C.greenLight, border: C.greenMid, color: C.green, label: "Over Pacing" },
-        not_uploaded: { bg: C.slate100, border: C.border, color: C.slate500, label: "Not Uploaded" },
-    };
-    const s = map[status] ?? map.not_uploaded;
-    return (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, background: s.bg, border: `1px solid ${s.border}`, fontSize: 10, fontWeight: 700, color: s.color, letterSpacing: "0.05em", textTransform: "uppercase" as const }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-            {s.label}
-        </span>
-    );
-}
-
-// ── "Last Day Impression" cell — matches the screenshot's stacked layout ──
+// ── "Last Day Impression" cell — diff + % + status, stacked layout ─────────
 function LastDayCell({ row }: { row: PacingRow }) {
-    if (row.status === "not_uploaded" || row.last_day_impression === null) {
-        return <span style={{ fontSize: 12, color: "#94A3B8" }}>Not uploaded</span>;
-    }
-
     const isUnder = row.status === "under";
     const color = isUnder ? "#DC2626" : "#16A34A";
     const sign = row.pct !== null && row.pct >= 0 ? "+" : "";
+
+    const diff =
+        row.last_day_impression !== null && row.daily_target !== null
+            ? row.last_day_impression - row.daily_target
+            : null;
+    const diffSign = diff !== null && diff >= 0 ? "+" : "-";
+    const diffAbs = diff !== null ? Math.abs(diff) : null;
 
     return (
         <div style={{ lineHeight: 1.5 }}>
@@ -133,9 +119,9 @@ function LastDayCell({ row }: { row: PacingRow }) {
             </div>
             <div style={{ fontSize: 11, color: "#94A3B8" }}>Report date:</div>
             <div style={{ fontSize: 11, color: "#94A3B8" }}>{fmtDate(row.last_day_date)}</div>
-            {row.pct !== null && (
+            {diff !== null && row.pct !== null && (
                 <div style={{ fontSize: 12, fontWeight: 600, color }}>
-                    {sign}{row.pct}%
+                    {diffSign}{fmtNumber(diffAbs)} ({sign}{row.pct}%)
                 </div>
             )}
             <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: "uppercase" as const }}>
@@ -145,21 +131,30 @@ function LastDayCell({ row }: { row: PacingRow }) {
     );
 }
 
-interface Props {
-    status: PacingStatus;
+// ── Helper: derive the active tab from the current URL path ────────────────
+function resolveStatusFromPath(pathname: string): PacingStatus {
+    const match = TAB_CONFIG.find(t => pathname === t.path || pathname.startsWith(t.path));
+    return match?.key ?? "under";
 }
 
-export default function PacingReportShared({ status }: Props) {
+export default function Pacing_Details() {
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const [status, setStatus] = useState<PacingStatus>(() => resolveStatusFromPath(location.pathname));
     const [rows, setRows] = useState<PacingRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [campaignFilter, setCampaignFilter] = useState<string | undefined>();
 
-    const navigate = useNavigate();
+    // Keep internal `status` in sync if the URL changes externally (e.g. sidebar link, back button)
+    useEffect(() => {
+        setStatus(resolveStatusFromPath(location.pathname));
+    }, [location.pathname]);
 
-    const fetchData = useCallback(() => {
+    const fetchData = useCallback((currentStatus: PacingStatus) => {
         setLoading(true);
-        fetch(`${BASE_URL}/get_pacing_report/?status=${status}`, {
+        fetch(`${BASE_URL}/get_pacing_report/?status=${currentStatus}`, {
             headers: { "ngrok-skip-browser-warning": "1" },
         })
             .then(async (r) => {
@@ -176,8 +171,18 @@ export default function PacingReportShared({ status }: Props) {
                 setRows([]);
             })
             .finally(() => setLoading(false));
-    }, [status]);
-    useEffect(() => { fetchData(); }, [fetchData]);
+    }, []);
+
+    useEffect(() => {
+        fetchData(status);
+    }, [status, fetchData]);
+
+    const handleTabChange = (key: string) => {
+        const tab = TAB_CONFIG.find(t => t.key === key);
+        if (!tab) return;
+        setStatus(tab.key);       // updates table immediately
+        navigate(tab.path);       // keeps URL + sidebar highlighting in sync
+    };
 
     const campaignOptions = Array.from(new Set(rows.map(r => r.campaign_id))).map(id => ({
         value: id,
@@ -193,8 +198,6 @@ export default function PacingReportShared({ status }: Props) {
         }
         return true;
     });
-
-
 
     const columns: ColumnsType<PacingRow> = [
         { title: "S.No", dataIndex: "s_no", width: 56, render: (v) => <span style={{ fontSize: 12, color: C.slate500 }}>{v}</span> },
@@ -270,14 +273,8 @@ export default function PacingReportShared({ status }: Props) {
             width: 170,
             render: (_, row) => <LastDayCell row={row} />,
         },
-        {
-            title: "Status",
-            key: "status",
-            width: 130,
-            fixed: "right",
-            render: (_, row) => <PacingStatusBadge status={row.status} />,
-        },
     ];
+
     return (
         <>
             {/* Header */}
@@ -287,12 +284,10 @@ export default function PacingReportShared({ status }: Props) {
                     LAST DAY IMPRESSION VS DAILY TARGET ACROSS CAMPAIGNS
                 </p>
             </div>
+
             <Tabs
                 activeKey={status}
-                onChange={(key) => {
-                    const tab = TAB_CONFIG.find(t => t.key === key);
-                    if (tab) navigate(tab.path);
-                }}
+                onChange={handleTabChange}
                 items={TAB_CONFIG.map(t => ({ key: t.key, label: t.label }))}
             />
 
@@ -313,7 +308,7 @@ export default function PacingReportShared({ status }: Props) {
                     allowClear
                     style={{ width: 280 }}
                 />
-                <Button icon={<ReloadOutlined />} onClick={fetchData}>
+                <Button icon={<ReloadOutlined />} onClick={() => fetchData(status)}>
                     Refresh
                 </Button>
                 <span style={{ marginLeft: "auto", fontSize: 12, color: "#64748B", alignSelf: "center" }}>

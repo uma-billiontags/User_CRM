@@ -14,10 +14,11 @@ import View_Campaign from "./components/user_dashboard/View_Campaign";
 import Edit_Campaign from "./components/user_dashboard/Edit_Campaign";
 import User_Drafts from "./components/user_dashboard/User_Drafts";
 import User_IO from "./components/user_dashboard/User_IO";
-import User_Invoice from "./components/user_dashboard/User_Invoice";
 import User_Reports from "./components/user_dashboard/User_Reports";
 import Campaign_Choice from "./components/user_dashboard/Campaign_Choice";
 import Bulk_Campaign_Create from "./components/user_dashboard/Bulk_Campaign_Create";
+import User_Status from "./components/user_dashboard/User_Status";
+import User_Invoices from "./components/user_dashboard/User_Invoice";
 
 // ── Creatives ─────────────────────────────────────────────────────────────────
 import Creative_Dashboard from "./components/creatives_team_dashboard/Creative_Dashboard";
@@ -36,13 +37,15 @@ import CampaignLayout from "./components/campaign_team_dashboard/CampaignLayout"
 // ── Super Admin ───────────────────────────────────────────────────────────────
 import SuperAdminLayout from "./components/super_admin/SuperAdminLayout";
 import SuperAdminOverview from "./components/super_admin/SuperAdminOverview";
-import { AllClientsPage, PendingPage,  } from "./components/super_admin/ClientListPages";
+import { AllClientsPage, PendingPage, } from "./components/super_admin/ClientListPages";
 import { AdminUsersPage, AuditLogsPage, SystemSettingsPage } from "./components/super_admin/SettingsPages";
 import TeamAccess from "./components/super_admin/TeamAccess";
 import All_Campaigns from "./components/super_admin/All_Campaigns";
 import Superadmin_Daily_Reports from "./components/super_admin/Daily_Reports"
 import Superadmin_Bulk_Campaigns_Details from "./components/super_admin/Bulk_Campaign_Details"
 import Superadmin_CampaignReports from "./components/super_admin/CampaignReports";
+import Superadmin_All_Invoices from "./components/super_admin/All_Invoices";
+import Superadmin_Pacing_Details from "./components/admin/Pacing_Details";
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 import AdminLayout from "./components/admin/AdminLayout";
@@ -52,7 +55,8 @@ import CampaignReports from "./components/admin/CampaignReports";
 import Daily_Reports from "./components/admin/Daily_Reports";
 import Bulk_Campaigns_Details from "./components/admin/Bulk_Campaign_Details";
 import Admin_Messages_Sidebar from "./components/admin/Admin_Messages_Sidebar";
-import User_Staus from "./components/user_dashboard/User_Status";
+import Admin_All_Invoices from "./components/admin/All_Invoices";
+import Admin_Pacing_Details from "./components/admin/Pacing_Details";
 
 function App() {
   return (
@@ -74,11 +78,11 @@ function App() {
           <Route path="/update_campaign/:campaign_id" element={<Edit_Campaign />} />
           <Route path="/user_drafts" element={<User_Drafts />} />
           <Route path="/user_io" element={<User_IO />} />
-          <Route path="/user_invoices" element={<User_Invoice />} />
+          <Route path="/user_invoices" element={<User_Invoices />} />
           <Route path="user_reports" element={<User_Reports />} />
           <Route path="campaign_choice" element={<Campaign_Choice />} />
           <Route path="bulk_campaign_create" element={<Bulk_Campaign_Create />} />
-          <Route path="user_status" element={<User_Staus />} />
+          <Route path="user_status" element={<User_Status />} />
         </Route>
 
         {/* Creatives team (has its own layout inside each page, leave as-is) */}
@@ -111,6 +115,9 @@ function App() {
           <Route path="campaign_reports" element={<Superadmin_CampaignReports />} />
           <Route path="daily_reports" element={<Superadmin_Daily_Reports />} />
           <Route path="bulk_campaigns_details" element={<Superadmin_Bulk_Campaigns_Details />} />
+          <Route path="all_invoices" element={<Superadmin_All_Invoices />} />
+           <Route path="under-pacing" element={<Superadmin_Pacing_Details />} />
+          <Route path="over-pacing" element={<Superadmin_Pacing_Details />} />
         </Route>
 
         {/* Admin */}
@@ -126,6 +133,9 @@ function App() {
           <Route path="daily_reports" element={<Daily_Reports />} />
           <Route path="bulk_campaigns_details" element={<Bulk_Campaigns_Details />} />
           <Route path="admin_messages" element={<Admin_Messages_Sidebar />} />
+          <Route path="all_invoices" element={<Admin_All_Invoices />} />
+          <Route path="under-pacing" element={<Admin_Pacing_Details />} />
+          <Route path="over-pacing" element={<Admin_Pacing_Details />} />
         </Route>
       </Routes>
     </BrowserRouter>

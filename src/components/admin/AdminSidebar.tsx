@@ -21,7 +21,7 @@ interface NavItem {
   to: string;
   accent?: string;
   countKey?: keyof Counts;
-  children?: { label: string; icon: string; to: string }[];
+  children?: { label: string; icon: string; to: string; matchPaths?: string[] }[];
 }
 
 interface NavGroup {
@@ -65,7 +65,25 @@ const NAV_GROUPS: NavGroup[] = [
       {
         label: "Campaign Reports", icon: "📄", to: "/admin/campaign_reports"
       },
-      { label: "Daily Reports", icon: "📄", to: "/admin/daily_reports" },
+      {
+        label: "Daily Reports", icon: "📄", to: "/admin/daily_reports",
+        children: [
+          {
+            label: "Pacing Details",
+            icon: "📄",
+            to: "/admin/under-pacing",
+            matchPaths: ["/admin/under-pacing", "/admin/over-pacing"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    group: "INVOICES",
+    items: [
+      {
+        label: "All Invoices", icon: "📄", to: "/admin/all_invoices"
+      },
     ],
   },
   {
@@ -134,11 +152,19 @@ export default function AdminSidebar({ counts }: AdminSidebarProps) {
             }}>{group}</div>
 
             {items.map((item) => {
-              const active =
-                location.pathname === item.to ||
-                (item.to !== "/admin/overview" && location.pathname.startsWith(item.to));
-              const count = item.countKey !== undefined ? counts[item.countKey] : undefined;
               const hasChildren = item.children && item.children.length > 0;
+
+              // 1. Check if the current location explicitly matches a child path
+              const isAnyChildActive = hasChildren && item.children!.some(c =>
+                (c.matchPaths ?? [c.to]).includes(location.pathname)
+              );
+
+              // 2. The parent is only highlighted if it matches directly, NOT when its child is active
+              const active = !isAnyChildActive && (
+                location.pathname === item.to ||
+                (item.to !== "/admin/overview" && location.pathname.startsWith(item.to))
+              );
+              const count = item.countKey !== undefined ? counts[item.countKey] : undefined;
 
               return (
                 <div key={item.to}>
@@ -181,7 +207,7 @@ export default function AdminSidebar({ counts }: AdminSidebarProps) {
                   {hasChildren && (
                     <div style={{ paddingLeft: 18, marginBottom: 4 }}>
                       {item.children!.map((child) => {
-                        const childActive = location.pathname === child.to;
+                        const childActive = (child.matchPaths ?? [child.to]).includes(location.pathname);
                         return (
                           <Link key={child.to} to={child.to} style={{ textDecoration: "none" }}>
                             <div style={{

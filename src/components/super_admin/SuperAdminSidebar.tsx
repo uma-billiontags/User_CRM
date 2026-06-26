@@ -26,7 +26,7 @@ interface NavItem {
   to: string;
   accent?: string;
   countKey?: keyof Counts;
-  children?: { label: string; icon: string; to: string }[];
+  children?: { label: string; icon: string; to: string; matchPaths?: string[] }[];
 }
 
 interface NavGroup {
@@ -67,7 +67,24 @@ const NAV_GROUPS: NavGroup[] = [
       {
         label: "Campaign Reports", icon: "📄", to: "/superadmin/campaign_reports"
       },
-      { label: "Daily Reports", icon: "📄", to: "/superadmin/daily_reports" },
+{
+        label: "Daily Reports", icon: "📄", to: "/superadmin/daily_reports",
+        children: [
+          {
+            label: "Pacing Details",
+            icon: "📄",
+            to: "/superadmin/under-pacing",
+            matchPaths: ["/superadmin/under-pacing", "/superadmin/over-pacing"],
+          },
+        ],
+      },    ],
+  },
+  {
+    group: "INVOICES",
+    items: [
+      {
+        label: "All Invoices", icon: "📄", to: "/superadmin/all_invoices"
+      },
     ],
   },
   {

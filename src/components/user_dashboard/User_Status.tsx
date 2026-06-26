@@ -94,7 +94,7 @@ function FilterCard({ label, value, icon, color, bg, active, onClick }: {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function User_Staus() {
+export default function User_Status() {
   const [rows, setRows] = useState<LineItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
