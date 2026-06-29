@@ -71,7 +71,7 @@ export default function Admin_Messages_Sidebar() {
     const [loadingMsgs, setLoadingMsgs] = useState(false);
     const [input, setInput] = useState("");
     const [uploading, setUploading] = useState(false);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [_imagePreview, setImagePreview] = useState<string | null>(null);
     const [staged, setStaged] = useState<StagedFile | null>(null);
 
     const bottomRef = useRef<HTMLDivElement>(null);
